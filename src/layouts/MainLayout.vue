@@ -48,6 +48,74 @@
             </q-item-section>
           </q-item>
 
+          <q-expansion-item label="Menu Levels">
+            <template #header>
+              <q-item-section class="q-pl-md" thumbnail>
+                <q-icon name="settings" :color="$q.dark.isActive ? 'white' : 'grey'" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="q-pl-md">Gestão</q-item-label>
+              </q-item-section>
+            </template>
+
+            <q-item class="q-ml-xl" active-class="q-item-no-link-highlighting">
+              <q-item-section class="q-pl-md" thumbnail>
+                <q-icon name="apps" :color="$q.dark.isActive ? 'white' : 'grey'" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Produtos</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item class="q-ml-xl" active-class="q-item-no-link-highlighting">
+              <q-item-section class="q-pl-md" thumbnail>
+                <q-icon name="category" :color="$q.dark.isActive ? 'white' : 'grey'" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Produtos categorias</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item class="q-ml-xl" active-class="q-item-no-link-highlighting">
+              <q-item-section class="q-pl-md" thumbnail>
+                <q-icon name="attach_money" :color="$q.dark.isActive ? 'white' : 'grey'" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Terifas</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <!-- <q-expansion-item :header-inset-level="0.85" label="Level 2">
+              <q-item
+                class="q-ml-xl"
+                style="margin-left: 55px !important"
+                active-class="q-item-no-link-highlighting"
+              >
+                <q-item-section>
+                  <q-item-label>Level 2.1</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-expansion-item :header-inset-level="1" label="Level 2.2">
+                <q-item
+                  style="margin-left: 65px !important"
+                  active-class="q-item-no-link-highlighting"
+                >
+                  <q-item-section>
+                    <q-item-label>Level 2.2.1</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item
+                  style="margin-left: 65px !important"
+                  active-class="q-item-no-link-highlighting"
+                >
+                  <q-item-section>
+                    <q-item-label>Level 2.2.2</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-expansion-item>
+            </q-expansion-item> -->
+          </q-expansion-item>
+
           <q-separator class="q-my-md" />
 
           <q-item v-ripple clickable>
@@ -58,68 +126,6 @@
               <q-item-label>Sair</q-item-label>
             </q-item-section>
           </q-item>
-
-          <!-- <q-item v-for="link in links2" :key="link.text" v-ripple clickable>
-            <q-item-section avatar>
-              <q-icon color="grey" :name="link.icon" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ link.text }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-separator class="q-mt-md q-mb-xs" />
-
-          <q-item-label header class="text-weight-bold text-uppercase">
-            More from Youtube
-          </q-item-label>
-
-          <q-item v-for="link in links3" :key="link.text" v-ripple clickable>
-            <q-item-section avatar>
-              <q-icon color="grey" :name="link.icon" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ link.text }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-separator class="q-my-md" />
-
-          <q-item v-for="link in links4" :key="link.text" v-ripple clickable>
-            <q-item-section avatar>
-              <q-icon color="grey" :name="link.icon" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ link.text }}</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-separator class="q-mt-md q-mb-lg" />
-
-          <div class="q-px-md text-grey-9">
-            <div class="row items-center q-gutter-x-sm q-gutter-y-xs">
-              <a
-                v-for="button in buttons1"
-                :key="button.text"
-                class="YL__drawer-footer-link"
-                href="javascript:void(0)"
-              >
-                {{ button.text }}
-              </a>
-            </div>
-          </div>
-          <div class="q-py-md q-px-md text-grey-9">
-            <div class="row items-center q-gutter-x-sm q-gutter-y-xs">
-              <a
-                v-for="button in buttons2"
-                :key="button.text"
-                class="YL__drawer-footer-link"
-                href="javascript:void(0)"
-              >
-                {{ button.text }}
-              </a>
-            </div>
-          </div> -->
         </q-list>
       </q-scroll-area>
     </q-drawer>
@@ -162,7 +168,6 @@ export default {
         { icon: 'groups_2', text: 'Passageiros', to: '/passageiros' },
         { icon: 'no_crash', text: 'Corridas', to: '/corridas' },
         { icon: 'help_center', text: 'Central de ajuda', to: '/usuarios1' },
-        { icon: 'settings', text: 'Configurações', to: '/usuarios2' },
       ],
       links2: [
         { icon: 'folder', text: 'Library' },
