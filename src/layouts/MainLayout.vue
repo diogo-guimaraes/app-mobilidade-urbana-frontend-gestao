@@ -76,12 +76,17 @@
               </q-item-section>
             </q-item>
 
-            <q-item class="q-ml-xl" active-class="q-item-no-link-highlighting">
+            <q-item
+              clickable
+              @click="$router.push('/tarifas')"
+              class="q-ml-xl"
+              active-class="q-item-no-link-highlighting"
+            >
               <q-item-section class="q-pl-md" thumbnail>
                 <q-icon name="attach_money" :color="$q.dark.isActive ? 'white' : 'grey'" />
               </q-item-section>
               <q-item-section>
-                <q-item-label>Terifas</q-item-label>
+                <q-item-label>Tarifas</q-item-label>
               </q-item-section>
             </q-item>
 
