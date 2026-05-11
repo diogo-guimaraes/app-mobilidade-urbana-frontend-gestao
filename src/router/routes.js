@@ -54,6 +54,18 @@ const routes = [
         component: () =>
           import('src/pages/PaginaTarifas.vue'),
       },
+
+      {
+        path: 'produtos-corridas',
+        component: () =>
+          import('src/pages/PaginaProdutosCorridas.vue'),
+      },
+
+      {
+        path: 'produto-categorias',
+        component: () =>
+          import('src/pages/PaginaProdutoCategorias.vue'),
+      },
     ],
   },
 

@@ -51,20 +51,16 @@
           <q-tr :props="props">
             <q-td key="id">{{ props.row.id }}</q-td>
 
-            <q-td key="tarifa">
+            <q-td key="produto">
               <q-item>
                 <q-item-section>
-                  <q-item-label class="text-bold"> {{ props.row.produto.nome }}</q-item-label>
+                  <q-item-label class="text-bold"> {{ props.row.nome }}</q-item-label>
                   <q-item-label class="estilo-coluna">
-                    <div>Tafia base: {{ props.row.tarifa_base }}</div>
-                    <div>Valor por km: {{ props.row.valor_por_km }}</div>
+                    <div>Código: {{ props.row.codigo }}</div>
+                    <div>Estagégia precificação: {{ props.row.estrategia_precificacao }}</div>
                   </q-item-label>
                 </q-item-section>
               </q-item>
-            </q-td>
-
-            <q-td key="status">
-              <q-badge color="green"> ativo </q-badge>
             </q-td>
 
             <q-td key="acoes" align="center">
@@ -118,28 +114,9 @@ const pagination = ref({
 
 const columns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' },
-  { name: 'tarifa', label: 'Tarifas', align: 'left' },
-  // { name: 'modelo', label: 'modelo', field: 'status', align: 'left' },
-  // { name: 'ano_fabricacao', label: 'ano_fabricacao', align: 'center' },
-  // { name: 'ano_modelo', label: 'ano_modelo', field: 'status', align: 'left' },
-  // { name: 'cor', label: 'cor', field: 'status', align: 'left' },
-  // { name: 'placa', label: 'placa', field: 'status', align: 'left' },
-  // { name: 'renavam', label: 'renavam', field: 'status', align: 'left' },
-  // { name: 'categoria', label: 'categoria', field: 'status', align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
+  { name: 'produto', label: 'Produtos', align: 'left' },
   { name: 'acoes', label: 'Ações', align: 'center' },
 ]
-
-// const badgeColor = (status) => {
-//   if (status === 'ativo') return 'green'
-//   if (status === 'inativo') return 'orange'
-//   if (status === 'pendente') return 'warning'
-//   if (status === 'bloqueado') return 'red'
-// }
-
-// const toggleGrid = () => {
-//   grid.value = !grid.value
-// }
 
 const clearSearch = () => {
   search.value = ''
@@ -156,13 +133,14 @@ const buscarDados = async (props) => {
   loading.value = true
   const { page, rowsPerPage } = props ? props.pagination : pagination
   try {
-    const response = await api.get('/tarifas', {
+    const response = await api.get('/produtos-corridas', {
       params: {
         search: search.value || '',
         page: page,
         rowsPerPage: rowsPerPage,
       },
     })
+
     const paginate = response.data
 
     data.value = response.data.data
