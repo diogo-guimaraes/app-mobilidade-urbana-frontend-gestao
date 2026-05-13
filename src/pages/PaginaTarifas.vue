@@ -68,7 +68,7 @@
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.id)" dense flat icon="visibility">
+              <q-btn @click="openEditar(props.row.id)" dense flat icon="arrow_forward_ios">
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
                   visualizar
                 </q-tooltip>
