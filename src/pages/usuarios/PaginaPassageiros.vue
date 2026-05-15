@@ -68,7 +68,7 @@
           <q-tr :props="props">
             <q-td key="id">{{ props.row.id }}</q-td>
 
-            <q-td key="motorista">
+            <q-td key="passageiro">
               <q-item>
                 <q-item-section top avatar>
                   <q-avatar v-if="props.row.user.foto_thumbnail">
@@ -154,7 +154,7 @@ const pagination = ref({
 
 const columns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' },
-  { name: 'motorista', label: 'Motorista', field: 'name', align: 'left' },
+  { name: 'passageiro', label: 'Passageiros', field: 'name', align: 'left' },
   { name: 'acoes', label: 'Ações', align: 'center' },
 ]
 

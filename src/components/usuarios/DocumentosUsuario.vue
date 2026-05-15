@@ -3,7 +3,7 @@
     <SubirArquivo
       @updated="getMotoristaDocumentos()"
       v-model="dialog.envairArquivo"
-      :usuarioId="usuario.id"
+      :usuarioId="usuario?.id"
       :documento="documentoSelecionado"
     />
     <q-dialog v-model="model" @before-show="beforeShow" @before-hide="onBeforeHide">
