@@ -74,7 +74,7 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      port: 8080,
+      port: 8081, // A porta 8080 pertence ao WebSocket do Laravel Reverb.
       open: true, // opens browser window automatically
     },
 

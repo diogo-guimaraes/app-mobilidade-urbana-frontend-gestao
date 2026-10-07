@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md">
-    <CriarPublicidade @onRequest="onRequest" v-model="dialog.cadastrar" />
+    <CriarMidia @updated="onRequest" v-model="dialog.cadastrar" />
     <EditarUsuario @updated="onRequest" v-model="dialog.editar" :usuarioId="usuarioId" />
     <MostrarUsuario v-model="dialog.visualizar" />
     <DocumentosUsuario :usuarioId="usuarioId" v-model="dialog.documentos" />
@@ -64,10 +64,6 @@
         <template #body="props">
           <q-tr :props="props">
             <q-td key="id">{{ props.row.id }}</q-td>
-
-            <q-td key="cidade">
-              {{ props.row.cidade?.nome }}
-            </q-td>
 
             <q-td key="titulo">
               {{ props.row.titulo }}
@@ -134,7 +130,7 @@ import EditarUsuario from 'src/components/usuarios/EditarUsuario.vue'
 import ExcluirUsuario from 'src/components/usuarios/ExcluirUsuario.vue'
 import DocumentosUsuario from 'src/components/usuarios/DocumentosUsuario.vue'
 // import CardPerfilUsuario from 'src/components/usuarios/CardPerfilUsuario.vue'
-import CriarPublicidade from 'src/components/publicidade/CriarPublicidade.vue'
+import CriarMidia from 'src/components/midia/CriarMidia.vue'
 
 // STATES
 const data = ref([])
@@ -161,7 +157,6 @@ const pagination = ref({
 
 const columns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' },
-  { name: 'cidade_id', label: 'Cidade', field: 'cidade_id', align: 'left' },
   { name: 'titulo', label: 'Título', field: 'titulo', align: 'left' },
   { name: 'imagem', label: 'Banner', field: 'path', align: 'left' },
   { name: 'acoes', label: 'Ações', align: 'center' },
@@ -186,7 +181,7 @@ const openExcluir = (usuario) => {
 
 const request = async (props) => {
   loading.value = true
-  const { page, rowsPerPage } = props ? props.pagination : pagination
+  const { page, rowsPerPage } = props?.pagination ?? pagination.value
   try {
     const response = await api.get(`${dominio.value}`, {
       params: {
@@ -197,7 +192,6 @@ const request = async (props) => {
     })
 
     data.value = response.data.data
-    console.log(data, 'datadatadata')
     const paginate = response.data
     pagination.value.rowsNumber = paginate.total
     pagination.value.page = paginate.current_page

@@ -3,7 +3,12 @@
     <CriarMotorista @created="onRequest" v-model="dialog.cadastrar" />
     <EditarUsuario @updated="onRequest" v-model="dialog.editar" :usuarioId="usuarioId" />
     <MostrarUsuario v-model="dialog.visualizar" />
-    <DocumentosUsuario :usuario="usuario" v-model="dialog.documentos" />
+    <DocumentosUsuario
+      :usuario="usuario"
+      :motorista-id="motoristaId"
+      v-model="dialog.documentos"
+      @updated="onRequest"
+    />
     <MotoristaVeiculos :usuario="usuario" v-model="dialog.veiculos" />
     <ExcluirUsuario
       :acao="openPress"
@@ -38,7 +43,7 @@
             debounce="300"
             v-model="search"
             placeholder="Pesquisar"
-            @keyup.enter="buscarDados"
+            @keyup.enter="buscarDados()"
           >
             <template #before>
               <q-btn
@@ -113,6 +118,7 @@
                   () => {
                     dialog.documentos = true
                     usuario = props.row.user
+                    motoristaId = props.row.id
                   }
                 "
                 flat
@@ -181,10 +187,12 @@ const dialog = reactive({
   visualizar: false,
   excluir: false,
   veiculos: false,
+  documentos: false,
 })
 
 const usuarioId = ref(null)
 const usuario = ref({})
+const motoristaId = ref(null)
 
 const pagination = ref({
   page: 1,
@@ -226,7 +234,7 @@ const openExcluir = (usuario) => {
 
 const buscarDados = async (props) => {
   loading.value = true
-  const { page, rowsPerPage } = props ? props.pagination : pagination
+  const { page, rowsPerPage } = props?.pagination || pagination.value
   try {
     const response = await api.get(`${dominio.value}`, {
       params: {
