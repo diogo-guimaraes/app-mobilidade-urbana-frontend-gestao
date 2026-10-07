@@ -69,7 +69,7 @@ const routes = [
       {
         path: 'publicidades',
         component: () =>
-          import('src/pages/publicidades/PaginaPublicidades.vue'),
+          import('src/pages/midias/PaginaMidias.vue'),
       },
     ],
   },

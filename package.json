@@ -10,21 +10,29 @@
     "lint": "eslint -c ./eslint.config.js \"./src*/**/*.{js,cjs,mjs,vue}\"",
     "format": "prettier --write \"**/*.{js,vue,css,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
-    "dev": "quasar dev",
-    "build": "quasar build",
-    "postinstall": "quasar prepare"
+    "test:cnh": "node --test tests/cnh.test.mjs",
+    "test:e2e": "npm run build && playwright test",
+    "prepare:ocr": "node scripts/prepare-ocr.mjs",
+    "dev": "npm run prepare:ocr && quasar dev",
+    "build": "npm run prepare:ocr && quasar build",
+    "postinstall": "npm run prepare:ocr && quasar prepare"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
+    "@techstark/opencv-js": "4.12.0-release.1",
+    "@tesseract.js-data/por": "1.0.0",
     "axios": "^1.15.0",
     "moment": "^2.30.1",
+    "pdfjs-dist": "6.4.299",
     "pinia": "^3.0.1",
     "quasar": "^2.16.0",
+    "tesseract.js": "7.0.0",
     "vue": "^3.5.22",
     "vue-router": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "1.63.0",
     "@quasar/app-vite": "^2.5.1",
     "@vue/eslint-config-prettier": "^10.2.0",
     "autoprefixer": "^10.4.27",
@@ -37,7 +45,7 @@
     "vue-eslint-parser": "^10.4.0"
   },
   "engines": {
-    "node": "^28 || ^26 || ^24 || ^22.12",
+    "node": "^28 || ^26 || ^24 || ^22.13",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1",
     "pnpm": ">= 10.0.0"

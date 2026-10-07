@@ -31,3 +31,10 @@ yarn-error.log*
 
 # local .env files
 .env.local*
+.env
+
+# Playwright artifacts
+/test-results/
+/playwright-report/
+/public/ocr/
+/public/pdfjs/

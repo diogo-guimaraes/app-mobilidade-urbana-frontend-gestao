@@ -1,6 +1,6 @@
 <template>
   <section>
-    <q-dialog v-model="model" @before-hide="beforeHide" @before-show="beforeShow">
+    <q-dialog v-model="model" :persistent="enviando" @before-hide="beforeHide">
       <q-card style="width: 700px; max-width: 80vw">
         <!-- HEADER -->
         <q-toolbar>
@@ -18,12 +18,12 @@
             <span class="text-weight-bold">Criar anúncio</span>
           </q-toolbar-title>
 
-          <q-btn flat round dense icon="close" v-close-popup />
+          <q-btn flat round dense icon="close" :disable="enviando" v-close-popup />
         </q-toolbar>
 
         <q-separator />
 
-        <div class="q-pa-md">
+        <q-form class="q-pa-md" @submit="request">
           <q-card-section>
             <div class="row">
               <!-- INPUTS -->
@@ -35,28 +35,9 @@
                     label="Título"
                     outlined
                     dense
+                    maxlength="255"
+                    :disable="enviando"
                     :rules="[(val) => (val && val.length >= 3) || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-select
-                    v-model="banner.cidade"
-                    dense
-                    outlined
-                    class="full-width"
-                    label="Cidade"
-                    :options="cidades"
-                    use-input
-                    option-label="nome"
-                    option-value="id"
-                    emit-value
-                    map-options
-                    :rules="[(val) => !!val || 'Campo obrigatório']"
-                    @filter="filter"
-                    clearable
                   />
                 </q-item>
               </div>
@@ -69,7 +50,13 @@
               v-model="file"
               label="Selecione o arquivo"
               counter
-              max-files="1"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              :max-files="1"
+              :max-file-size="12337152"
+              :disable="enviando"
+              :rules="[(val) => !!val || 'Selecione uma imagem']"
+              hint="JPG ou PNG de até 12048 KB"
+              @rejected="arquivoRejeitado"
             >
               <template v-slot:before>
                 <q-icon name="upload_file" />
@@ -83,14 +70,15 @@
             <div class="q-mt-md" align="center">
               <q-btn
                 v-if="file"
-                @click="request()"
+                type="submit"
                 label="Enviar"
                 color="primary"
                 class="q-mt-md"
+                :loading="enviando"
               />
             </div>
           </q-card-section>
-        </div>
+        </q-form>
       </q-card>
     </q-dialog>
   </section>
@@ -120,99 +108,53 @@ const model = computed({
 
 // STATE
 const file = ref(null)
+const enviando = ref(false)
 
 const banner = reactive({
   titulo: '',
-  cidade: null,
 })
 
-const cidades = ref([])
-const optCidades = ref([])
-
 // LIFECYCLE
-async function beforeShow() {
-  try {
-    const data = await getCidades()
-    cidades.value = [...data]
-    optCidades.value = [...data]
-  } catch (err) {
-    $q.notify({
-      type: 'negative',
-      message: err.response?.data?.message || 'Erro ao carregar as cidades.',
-    })
-  }
-}
-
 async function beforeHide() {
   file.value = null
   Object.assign(banner, {
     titulo: '',
-    cidade: null,
   })
-}
-
-// FILTER DO Q-SELECT
-function filter(val, update) {
-  update(() => {
-    if (!val) {
-      cidades.value = [...optCidades.value]
-      return
-    }
-    // Remove acentos para facilitar a pesquisa.
-    const texto = removerAcentos(val.toLowerCase().trim())
-
-    cidades.value = optCidades.value.filter((cidade) => {
-      const nome = removerAcentos(String(cidade.nome || '').toLowerCase())
-
-      return nome.includes(texto)
-    })
-  })
-}
-
-// Remove acentos
-function removerAcentos(texto) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 // ACTION
-function request() {
+function arquivoRejeitado() {
+  $q.notify({ type: 'negative', message: 'Selecione uma imagem JPG ou PNG de até 12048 KB.' })
+}
+
+async function request() {
+  if (enviando.value || !file.value) return
+
+  enviando.value = true
   const data = new FormData()
-
-  if (file.value) {
-    data.append('arquivo', file.value)
-  }
-
-  data.append('cidade_id', banner.cidade)
+  data.append('arquivo', file.value)
   data.append('titulo', banner.titulo)
 
-  api
-    .post('/publicidades', data, {
+  try {
+    const res = await api.post('/publicidades', data, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
-    .then((res) => {
-      $q.notify({
-        type: 'positive',
-        message: res.data.message,
-      })
-
-      emit('onRequest')
-
-      model.value = false
+    $q.notify({
+      type: 'positive',
+      message: res.data.message,
     })
-    .catch((err) => {
-      $q.notify({
-        type: 'negative',
-        message: err.response?.data?.message || 'Erro ao criar anúncio.',
-      })
+
+    emit('updated')
+    model.value = false
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Erro ao criar anúncio.',
     })
-}
-
-// API
-async function getCidades() {
-  const { data } = await api.get('/cidades')
-
-  return data
+  } finally {
+    enviando.value = false
+  }
 }
 </script>
