@@ -10,17 +10,33 @@
           </q-card-section>
           <q-card-section>
             <div class="text-center q-pt-lg">
-              <div class="col text-h6 ellipsis">Log in</div>
+              <div class="col text-h6 ellipsis">Acesso à gestão</div>
             </div>
           </q-card-section>
           <q-card-section>
             <q-form @submit="onSubmit" class="q-gutter-md">
-              <q-input filled label="Username" lazy-rules v-model="form.email" />
+              <q-input
+                filled
+                type="email"
+                label="E-mail"
+                autocomplete="username"
+                lazy-rules
+                :rules="[(val) => !!val?.trim() || 'Informe o e-mail']"
+                v-model="form.email"
+              />
 
-              <q-input type="password" filled v-model="form.password" label="Password" lazy-rules />
+              <q-input
+                type="password"
+                filled
+                v-model="form.password"
+                label="Senha"
+                autocomplete="current-password"
+                lazy-rules
+                :rules="[(val) => !!val || 'Informe a senha']"
+              />
 
               <div>
-                <q-btn :loading="isLoading" label="Login" type="submit" color="primary" />
+                <q-btn :loading="isLoading" label="Entrar" type="submit" color="primary" />
               </div>
             </q-form>
           </q-card-section>
@@ -51,13 +67,11 @@ const form = reactive({
 const isLoading = ref(false)
 
 const onSubmit = async () => {
-  console.log(process.env.API_URL)
   isLoading.value = true
 
   try {
     // Dispara a ação de login lá na Store
     await authStore.login(form)
-    console.log(authStore, 'authStore')
 
     // Se deu certo, mostra mensagem de sucesso
     customNotify({
@@ -69,8 +83,6 @@ const onSubmit = async () => {
     // Redireciona para o painel administrativo
     router.push('/dashboard') // Mude para o nome correto da sua rota inicial logada
   } catch (error) {
-    console.error('Erro no componente de login:', error)
-
     // Tenta pegar a mensagem de erro retornada pelo Laravel (ex: 422 Unprocessable Entity ou 401 Unauthorized)
     let errorMessage = 'Falha ao realizar login. Verifique o servidor.'
 
@@ -79,7 +91,6 @@ const onSubmit = async () => {
     } else if (error.response?.data?.error) {
       errorMessage = error.response.data.error
     }
-    console.log(errorMessage, 'errorMessage')
     customNotify({
       type: 'negative',
       message: errorMessage,

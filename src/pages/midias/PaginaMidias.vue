@@ -1,9 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <CriarMidia @updated="onRequest" v-model="dialog.cadastrar" />
-    <EditarUsuario @updated="onRequest" v-model="dialog.editar" :usuarioId="usuarioId" />
-    <MostrarUsuario v-model="dialog.visualizar" />
-    <DocumentosUsuario :usuarioId="usuarioId" v-model="dialog.documentos" />
+    <VisualizarRegistro v-model="dialog.visualizar" tipo="midia" :registro="registroVisualizado" />
     <ExcluirUsuario
       :acao="openPress"
       :data="usuarioSelecionado"
@@ -78,7 +76,13 @@
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.id)" dense flat icon="visibility">
+              <q-btn
+                @click="openVisualizar(props.row)"
+                dense
+                flat
+                icon="visibility"
+                aria-label="Visualizar registro"
+              >
                 <template v-slot:loading>
                   <q-spinner-hourglass />
                 </template>
@@ -97,7 +101,7 @@
         <template #item="props">
           <div class="q-pa-xs col-xs-12 col-sm-6 col-md-3">
             <q-card>
-              <q-item clickable @click="openEditar(props.row.id)">
+              <q-item clickable @click="openVisualizar(props.row)">
                 <q-item-section avatar>
                   <!-- <q-avatar size="70px">
                     <img v-if="props.row.imagem" :src="props.row.imagem" />
@@ -125,10 +129,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
-import MostrarUsuario from 'src/components/usuarios/MostrarUsuario.vue'
-import EditarUsuario from 'src/components/usuarios/EditarUsuario.vue'
+import VisualizarRegistro from 'src/components/VisualizarRegistro.vue'
 import ExcluirUsuario from 'src/components/usuarios/ExcluirUsuario.vue'
-import DocumentosUsuario from 'src/components/usuarios/DocumentosUsuario.vue'
 // import CardPerfilUsuario from 'src/components/usuarios/CardPerfilUsuario.vue'
 import CriarMidia from 'src/components/midia/CriarMidia.vue'
 
@@ -148,7 +150,7 @@ const dialog = reactive({
   excluir: false,
 })
 
-const usuarioId = ref(null)
+const registroVisualizado = ref(null)
 
 const pagination = ref({
   page: 1,
@@ -168,9 +170,9 @@ const clearSearch = () => {
   request()
 }
 
-const openEditar = (id) => {
-  usuarioId.value = id
-  dialog.editar = true
+const openVisualizar = (registro) => {
+  registroVisualizado.value = registro
+  dialog.visualizar = true
 }
 
 const openExcluir = (usuario) => {

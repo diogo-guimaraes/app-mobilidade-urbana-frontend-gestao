@@ -74,29 +74,79 @@
           />
         </q-card-section>
 
-        <q-card-section>
-          <p>Deseja registrar este usuário como motorista?</p>
-          <CardPerfilUsuario v-if="usuario" :usuario="usuario" />
-        </q-card-section>
+        <q-form @submit="criarMotorista">
+          <q-card-section>
+            <p>Deseja registrar este usuário como motorista?</p>
+            <CardPerfilUsuario v-if="usuario" :usuario="usuario" />
+            <div class="text-grey-7 q-mt-md q-mb-sm">Informe os dados de acesso do motorista.</div>
+            <q-input
+              v-model="cadastro.email"
+              outlined
+              dense
+              type="email"
+              label="E-mail do motorista *"
+              :disable="registrando"
+              :rules="[(val) => !!val?.trim() || 'Informe o e-mail do motorista']"
+              :error="!!erros.email"
+              :error-message="erros.email"
+              maxlength="255"
+            />
+            <q-input
+              v-model="cadastro.telefone"
+              outlined
+              dense
+              label="Telefone"
+              mask="(##) #####-####"
+              unmasked-value
+              :disable="registrando"
+              :rules="[(val) => !val || /^\d{10,11}$/.test(val) || 'Informe um telefone com DDD']"
+              :error="!!erros.telefone"
+              :error-message="erros.telefone"
+            />
+            <q-input
+              v-model="cadastro.password"
+              outlined
+              dense
+              label="Senha *"
+              type="password"
+              autocomplete="new-password"
+              :disable="registrando"
+              :rules="[(val) => val?.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']"
+              :error="!!erros.password"
+              :error-message="erros.password"
+              maxlength="255"
+            />
+            <q-input
+              v-model="cadastro.password_confirmation"
+              outlined
+              dense
+              label="Confirmar senha *"
+              type="password"
+              autocomplete="new-password"
+              :disable="registrando"
+              :rules="[(val) => (!!val && val === cadastro.password) || 'As senhas não conferem']"
+            />
+          </q-card-section>
 
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn
-            flat
-            no-caps
-            label="Cancelar"
-            color="primary"
-            :disable="registrando"
-            v-close-popup
-          />
-          <q-btn
-            no-caps
-            label="Confirmar registro"
-            color="primary"
-            unelevated
-            :loading="registrando"
-            @click="criarMotorista"
-          />
-        </q-card-actions>
+          <q-card-actions align="right" class="q-pa-md">
+            <q-btn
+              flat
+              no-caps
+              label="Cancelar"
+              color="primary"
+              :disable="registrando"
+              v-close-popup
+            />
+            <q-btn
+              no-caps
+              label="Confirmar registro"
+              color="primary"
+              unelevated
+              :loading="registrando"
+              type="submit"
+            />
+          </q-card-actions>
+        </q-form>
       </q-card>
     </q-dialog>
   </div>
@@ -104,7 +154,7 @@
 
 <script setup>
 import CardPerfilUsuario from 'src/components/usuarios/CardPerfilUsuario.vue'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 
@@ -126,6 +176,8 @@ const usuarios = ref([])
 const usuario = ref(null)
 const loading = ref(false)
 const search = ref('')
+const cadastro = reactive({ email: '', telefone: '', password: '', password_confirmation: '' })
+const erros = ref({})
 
 const pagination = ref({
   page: 1,
@@ -141,6 +193,8 @@ const columns = [
 
 function selectRow(row) {
   usuario.value = row
+  Object.assign(cadastro, { email: '', telefone: '', password: '', password_confirmation: '' })
+  erros.value = {}
   confirmacao.value = true
 }
 
@@ -157,15 +211,26 @@ async function criarMotorista() {
   if (registrando.value || !usuario.value?.id) return
 
   registrando.value = true
+  erros.value = {}
   try {
     const response = await api.post('/motoristas', {
       user_id: usuario.value.id,
+      email: cadastro.email.trim(),
+      telefone: cadastro.telefone || null,
+      password: cadastro.password,
+      password_confirmation: cadastro.password_confirmation,
     })
     $q.notify({ type: 'positive', message: response.data.message })
     confirmacao.value = false
     model.value = false
     emit('created')
   } catch (error) {
+    erros.value = Object.fromEntries(
+      Object.entries(error.response?.data?.errors || {}).map(([campo, mensagens]) => [
+        campo,
+        mensagens[0],
+      ]),
+    )
     $q.notify({
       type: 'negative',
       message: error.response?.data?.message || 'Não foi possível registrar o motorista.',

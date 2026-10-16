@@ -1,8 +1,12 @@
 <template>
   <q-page class="q-pa-md">
-    <CriarUsuario @created="onRequest" v-model="dialog.cadastrar" />
-    <EditarUsuario @updated="onRequest" v-model="dialog.editar" :usuarioId="usuarioId" />
-    <MostrarUsuario v-model="dialog.visualizar" />
+    <CriarUsuario tipoUsuario="usuario" @created="onRequest" v-model="dialog.cadastrar" />
+    <MostrarUsuario
+      v-model="dialog.visualizar"
+      :usuario-id="usuarioId"
+      tipoUsuario="usuario"
+      :registro="registroVisualizado"
+    />
     <DocumentosUsuario :usuarioId="usuarioId" v-model="dialog.documentos" />
     <ExcluirUsuario
       :acao="openPress"
@@ -40,13 +44,14 @@
             @keyup.enter="request"
           >
             <template #before>
-              <q-btn
+              <!-- <q-btn
                 icon="person_add_alt"
                 color="primary"
                 @click="dialog.cadastrar = true"
                 label="CRIAR USUÁRIO"
+                v-if="pode('usuarios.gerenciar')"
                 class="q-mr-sm"
-              />
+              /> -->
               <q-btn-toggle
                 class="q-mr-sm"
                 @update:model-value="
@@ -78,12 +83,18 @@
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.id)" dense flat icon="visibility">
+              <q-btn
+                @click="openVisualizar(props.row)"
+                dense
+                flat
+                icon="visibility"
+                aria-label="Visualizar registro"
+              >
                 <template v-slot:loading>
                   <q-spinner-hourglass />
                 </template>
               </q-btn>
-              <!-- 
+              <!--
               <q-btn
                 @click=";(dialog.documentos = true), (usuarioId = props.row.id)"
                 flat
@@ -95,7 +106,13 @@
                 </q-tooltip>
               </q-btn> -->
 
-              <q-btn @click="openExcluir(props.row)" dense flat icon="delete">
+              <q-btn
+                v-if="pode('usuarios.gerenciar')"
+                @click="openExcluir(props.row)"
+                dense
+                flat
+                icon="delete"
+              >
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
                   arquivar
                 </q-tooltip>
@@ -108,7 +125,7 @@
         <template #item="props">
           <div class="q-pa-xs col-xs-12 col-sm-6 col-md-3">
             <q-card>
-              <q-item clickable @click="openEditar(props.row.id)">
+              <q-item clickable @click="openVisualizar(props.row)">
                 <q-item-section avatar>
                   <q-avatar size="70px">
                     <img v-if="props.row.foto" :src="props.row.foto" />
@@ -120,9 +137,7 @@
 
                 <q-item-section>
                   <q-item-label>{{ props.row.name }}</q-item-label>
-                  <q-item-label caption>
-                    {{ props.row.email }}
-                  </q-item-label>
+                  <q-item-label caption> CPF: {{ props.row.cpf }} </q-item-label>
                 </q-item-section>
               </q-item>
             </q-card>
@@ -134,11 +149,12 @@
 </template>
 
 <script setup>
+import { useAuthStore } from 'src/stores/auth'
+const { pode } = useAuthStore()
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
 import CriarUsuario from 'src/components/usuarios/CriarUsuario.vue'
 import MostrarUsuario from 'src/components/usuarios/MostrarUsuario.vue'
-import EditarUsuario from 'src/components/usuarios/EditarUsuario.vue'
 import ExcluirUsuario from 'src/components/usuarios/ExcluirUsuario.vue'
 import DocumentosUsuario from 'src/components/usuarios/DocumentosUsuario.vue'
 import CardPerfilUsuario from 'src/components/usuarios/CardPerfilUsuario.vue'
@@ -160,6 +176,7 @@ const dialog = reactive({
 })
 
 const usuarioId = ref(null)
+const registroVisualizado = ref(null)
 
 const pagination = ref({
   page: 1,
@@ -178,9 +195,10 @@ const clearSearch = () => {
   request()
 }
 
-const openEditar = (id) => {
-  usuarioId.value = id
-  dialog.editar = true
+const openVisualizar = (registro) => {
+  usuarioId.value = registro.id
+  registroVisualizado.value = registro
+  dialog.visualizar = true
 }
 
 const openExcluir = (usuario) => {
@@ -191,7 +209,7 @@ const openExcluir = (usuario) => {
 
 const request = async (props) => {
   loading.value = true
-  const { page, rowsPerPage } = props ? props.pagination : pagination
+  const { page, rowsPerPage } = props?.pagination || pagination.value
   try {
     const response = await api.get(`${dominio.value}`, {
       params: {

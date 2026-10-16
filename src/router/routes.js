@@ -15,61 +15,81 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       {
+        path: 'central-ajuda',
+        component: () => import('src/pages/ajuda/PaginaCentralAjuda.vue'),
+        meta: { permissao: 'ajuda.gerenciar' },
+      },
+      {
         path: 'dashboard',
         component: () => import('pages/IndexPage.vue'),
       },
 
       {
+        path: 'administracao/regras',
+        component: () => import('src/pages/administracao/PaginaRegras.vue'),
+        meta: { permissao: 'regras.gerenciar' },
+      },
+      {
+        path: 'sem-acesso',
+        component: () => import('src/pages/SemAcesso.vue'),
+      },
+      {
         path: 'usuarios',
-        component: () =>
-          import('src/pages/usuarios/PaginaUsuarios.vue'),
+        meta: { permissao: 'usuarios.consultar' },
+        component: () => import('src/pages/usuarios/PaginaUsuarios.vue'),
+      },
+
+      {
+        path: 'gestores',
+        meta: { permissao: 'gestores.gerenciar' },
+        component: () => import('src/pages/usuarios/PaginaGestores.vue'),
       },
 
       {
         path: 'motoristas',
-        component: () =>
-          import('src/pages/usuarios/PaginaMotoristas.vue'),
+        meta: { permissao: 'usuarios.consultar' },
+        component: () => import('src/pages/usuarios/PaginaMotoristas.vue'),
       },
 
       {
         path: 'passageiros',
-        component: () =>
-          import('src/pages/usuarios/PaginaPassageiros.vue'),
-      },
-
-      {
-        path: 'veiculos',
-        component: () =>
-          import('src/pages/PaginaVeiculos.vue'),
+        meta: { permissao: 'usuarios.consultar' },
+        component: () => import('src/pages/usuarios/PaginaPassageiros.vue'),
       },
 
       {
         path: 'corridas',
-        component: () =>
-          import('src/pages/PaginaCorridas.vue'),
+        meta: { permissao: 'corridas.consultar' },
+        component: () => import('src/pages/PaginaCorridas.vue'),
+      },
+
+      {
+        path: 'veiculos',
+        meta: { permissao: 'veiculos.consultar' },
+        component: () => import('src/pages/PaginaVeiculos.vue'),
       },
 
       {
         path: 'tarifas',
-        component: () =>
-          import('src/pages/PaginaTarifas.vue'),
+        meta: { permissao: 'configuracoes.gerenciar' },
+        component: () => import('src/pages/PaginaTarifas.vue'),
       },
 
       {
         path: 'produtos-corridas',
-        component: () =>
-          import('src/pages/PaginaProdutosCorridas.vue'),
+        meta: { permissao: 'configuracoes.gerenciar' },
+        component: () => import('src/pages/PaginaProdutosCorridas.vue'),
       },
 
       {
         path: 'produto-categorias',
-        component: () =>
-          import('src/pages/PaginaProdutoCategorias.vue'),
+        meta: { permissao: 'configuracoes.gerenciar' },
+        component: () => import('src/pages/PaginaProdutoCategorias.vue'),
       },
       {
         path: 'publicidades',
-        component: () =>
-          import('src/pages/midias/PaginaMidias.vue'),
+        meta: { permissao: 'configuracoes.gerenciar' },
+        component: () => import('src/pages/midias/PaginaMidias.vue'),
       },
     ],
   },

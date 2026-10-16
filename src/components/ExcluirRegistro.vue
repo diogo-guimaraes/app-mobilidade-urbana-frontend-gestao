@@ -59,7 +59,7 @@ import { computed, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 
-// PROPS
+// Opções da operação de arquivar, restaurar ou excluir.
 const props = defineProps({
   modelValue: Boolean,
   data: Array,

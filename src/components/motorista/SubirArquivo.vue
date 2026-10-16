@@ -1,10 +1,5 @@
 <template>
-  <q-dialog
-    v-model="model"
-    :persistent="isCnh || enviando"
-    @before-show="beforeShow"
-    @hide="onHide"
-  >
+  <q-dialog v-model="model" :persistent="isCnh || ocupado" @before-show="beforeShow" @hide="onHide">
     <q-card class="documento-dialog">
       <q-toolbar>
         <q-toolbar-title class="text-weight-bold">
@@ -18,15 +13,7 @@
                 : 'Enviar documento'
           }}
         </q-toolbar-title>
-        <q-btn
-          flat
-          round
-          dense
-          icon="close"
-          aria-label="Fechar"
-          :disable="enviando"
-          v-close-popup
-        />
+        <q-btn flat round dense icon="close" aria-label="Fechar" :disable="ocupado" v-close-popup />
       </q-toolbar>
       <q-separator />
       <q-form @submit.prevent="request">
@@ -61,7 +48,7 @@
               ]"
               toggle-color="primary"
               no-caps
-              :disable="enviando || carregandoCampos"
+              :disable="ocupado || carregandoCampos || !pode('documentos.analisar')"
               aria-label="Formato de envio da CNH"
             />
             <q-file
@@ -82,7 +69,7 @@
                 isCnh ? (fotosCnh ? formatosImagem : '.pdf,application/pdf') : formatosArquivo
               "
               :max-file-size="2097152"
-              :disable="enviando || carregandoCampos"
+              :disable="ocupado || carregandoCampos || !pode('documentos.analisar')"
               :rules="anexoSalvoAtivo ? undefined : [(val) => !!val || 'Selecione um arquivo']"
               :error="!!errors.arquivo"
               :error-message="errors.arquivo?.[0]"
@@ -106,7 +93,7 @@
                   icon="cancel"
                   color="grey-6"
                   aria-label="Remover documento atual"
-                  :disable="enviando || carregandoCampos"
+                  :disable="ocupado || carregandoCampos || !pode('documentos.analisar')"
                   @click.stop.prevent="removerAnexoSalvo"
                 >
                   <q-tooltip>{{
@@ -127,7 +114,7 @@
               :display-value="anexoSalvoAtivo ? nomeAnexoSalvo(documento?.verso) : undefined"
               :accept="formatosImagem"
               :max-file-size="2097152"
-              :disable="enviando || carregandoCampos"
+              :disable="ocupado || carregandoCampos || !pode('documentos.analisar')"
               :rules="
                 anexoSalvoAtivo ? undefined : [(val) => !!val || 'Selecione a foto do verso da CNH']
               "
@@ -180,6 +167,7 @@
                   >
                     <q-input
                       v-model="cnh[campo.name]"
+                      :readonly="!pode('documentos.analisar')"
                       @update:model-value="marcarCampoEditado(campo.name)"
                       outlined
                       :label="campo.label"
@@ -192,8 +180,8 @@
                       :unmasked-value="!!campo.mask"
                       :rules="campo.name === 'cpf' ? cpfRules : undefined"
                       :disable="camposBloqueados"
-                      :error="!!errors[`cnh.${campo.name}`]"
-                      :error-message="errors[`cnh.${campo.name}`]?.[0]"
+                      :error="!!errors[`informacoes_complementares.${campo.name}`]"
+                      :error-message="errors[`informacoes_complementares.${campo.name}`]?.[0]"
                       hide-bottom-space
                     />
                   </div>
@@ -206,9 +194,9 @@
                       :options="earOptions"
                       emit-value
                       map-options
-                      :disable="camposBloqueados"
-                      :error="!!errors['cnh.ear']"
-                      :error-message="errors['cnh.ear']?.[0]"
+                      :disable="camposBloqueados || !pode('documentos.analisar')"
+                      :error="!!errors['informacoes_complementares.ear']"
+                      :error-message="errors['informacoes_complementares.ear']?.[0]"
                     />
                   </div>
                   <div v-if="isReenvio" class="col-12">
@@ -300,14 +288,35 @@
         </div>
         <q-separator />
         <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" :disable="enviando" v-close-popup />
+          <AcoesAnaliseDocumento
+            :documento="documento"
+            v-model:loading="analisando"
+            :disable="
+              ocupado ||
+              carregandoCampos ||
+              erroCarregamento ||
+              anexoSalvoRemovido ||
+              !!file ||
+              !!fileVerso ||
+              camposEditados.size > 0
+            "
+            @updated="onAnaliseUpdated"
+          />
+          <q-space />
+          <q-btn flat label="Cancelar" :disable="ocupado" v-close-popup />
           <q-btn
             type="submit"
             label="Enviar"
+            v-if="pode('documentos.analisar')"
             color="primary"
             :loading="enviando"
             :disable="
-              !arquivosProntos || carregando || extraindo || erroCarregamento || !motoristaId
+              ocupado ||
+              !arquivosProntos ||
+              carregando ||
+              extraindo ||
+              erroCarregamento ||
+              !motoristaId
             "
           />
         </q-card-actions>
@@ -317,11 +326,14 @@
 </template>
 
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { useAuthStore } from 'src/stores/auth'
+const { pode } = useAuthStore()
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 import { extrairCnhPdf } from 'src/utils/extrairCnhPdf'
 import { extrairCnhImagens } from 'src/utils/extrairCnhImagens'
+import AcoesAnaliseDocumento from 'src/components/motorista/AcoesAnaliseDocumento.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -389,17 +401,19 @@ const arquivosProntos = computed(() =>
       : !!file.value && isPdf.value,
 )
 const enviando = ref(false)
+const analisando = ref(false)
+const ocupado = computed(() => enviando.value || analisando.value)
 const carregando = ref(false)
 const erroCarregamento = ref(false)
 const errors = ref({})
 const extraindo = ref(false)
 const carregandoCampos = computed(() => carregando.value || extraindo.value)
 const camposBloqueados = computed(
-  () => carregandoCampos.value || enviando.value || erroCarregamento.value,
+  () => carregandoCampos.value || ocupado.value || erroCarregamento.value,
 )
 const progressoExtracao = ref('Lendo os dados da CNH…')
 const resultadoExtracao = ref(null)
-const camposEditados = new Set()
+const camposEditados = reactive(new Set())
 const camposExtraidos = new Map()
 let extracaoController = null
 let cacheLeiturasCnh = new WeakMap()
@@ -446,7 +460,7 @@ function nomeAnexoSalvo(anexo) {
 }
 
 function removerAnexoSalvo() {
-  if (enviando.value || carregandoCampos.value) return
+  if (ocupado.value || carregandoCampos.value) return
   anexoSalvoRemovido.value = true
   ladoPrevia.value = 'frente'
   errors.value = {}
@@ -512,6 +526,11 @@ function onHide() {
   carregando.value = false
   file.value = null
   fileVerso.value = null
+}
+
+function onAnaliseUpdated() {
+  emit('updated')
+  model.value = false
 }
 
 function marcarCampoEditado(name) {
@@ -601,11 +620,15 @@ async function loadMotorista() {
   try {
     const { data } = await api.get(`/motoristas/${props.motoristaId}`)
     if (version !== loadVersion) return
+    const informacoes = props.documento?.informacoes_complementares || {}
     for (const campo of camposCnh) {
-      cnh.value[campo.name] =
-        campo.type === 'date' ? (data[campo.name] || '').slice(0, 10) : data[campo.name] || ''
+      const valor = Object.hasOwn(informacoes, campo.name)
+        ? informacoes[campo.name]
+        : data[campo.name]
+      cnh.value[campo.name] = campo.type === 'date' ? (valor || '').slice(0, 10) : valor || ''
     }
-    cnh.value.ear = data.ear == null ? null : !!Number(data.ear)
+    const ear = Object.hasOwn(informacoes, 'ear') ? informacoes.ear : data.ear
+    cnh.value.ear = ear == null ? null : !!Number(ear)
   } catch {
     if (version === loadVersion) erroCarregamento.value = true
   } finally {
@@ -629,7 +652,7 @@ async function request() {
   if (
     !arquivosProntos.value ||
     !props.motoristaId ||
-    enviando.value ||
+    ocupado.value ||
     carregando.value ||
     extraindo.value ||
     erroCarregamento.value
@@ -644,7 +667,10 @@ async function request() {
   data.append('tipo_documento', props.documento.tipo_documento)
   if (isCnh.value) {
     for (const [name, value] of Object.entries(cnh.value)) {
-      data.append(`cnh[${name}]`, typeof value === 'boolean' ? (value ? '1' : '0') : (value ?? ''))
+      data.append(
+        `informacoes_complementares[${name}]`,
+        typeof value === 'boolean' ? (value ? '1' : '0') : (value ?? ''),
+      )
     }
   }
   try {

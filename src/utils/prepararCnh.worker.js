@@ -99,7 +99,7 @@ function encontrarDocumento(cv, cinza) {
   }
 }
 
-function preparar(cv, bitmap) {
+function preparar(cv, bitmap, tipoDocumento) {
   const canvas = new OffscreenCanvas(1, 1)
   const escala = Math.min(1, 2200 / Math.max(bitmap.width, bitmap.height))
   canvas.width = Math.max(1, Math.round(bitmap.width * escala))
@@ -234,10 +234,14 @@ function preparar(cv, bitmap) {
       'ear',
     ]
     const camposColoridos = ['numero_registro', 'cnh_categoria', 'cnh_expiracao']
-    const imagens = [
-      [adaptativaCinza, camposPretos],
-      [contrastada, camposColoridos],
-    ].map(([mat, campos], index) => {
+    const variantes =
+      tipoDocumento === 'CRLV'
+        ? [[normalizadaCinza, []]]
+        : [
+            [adaptativaCinza, camposPretos],
+            [contrastada, camposColoridos],
+          ]
+    const imagens = variantes.map(([mat, campos], index) => {
       // Remove long box borders without erasing individual character strokes.
       const tinta = novo(new cv.Mat())
       const horizontais = novo(new cv.Mat())
@@ -279,7 +283,7 @@ self.onmessage = async ({ data }) => {
       self.postMessage({ tipo: 'pronto' })
     } else {
       const { cv } = await carregamentoCv
-      const resultado = preparar(cv, data.bitmap)
+      const resultado = preparar(cv, data.bitmap, data.documento)
       self.postMessage(
         { tipo: 'resultado', ...resultado },
         resultado.imagens.map((imagem) => imagem.pixels),

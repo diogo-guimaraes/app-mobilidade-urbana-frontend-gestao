@@ -1,9 +1,7 @@
 <template>
   <q-page class="q-pa-md">
-    <CriarVeiculo @onRequest="onRequest" v-model="dialog.criar" />
-    <EditarVeiculo @updated="onRequest" v-model="dialog.editar" :veiculoId="veiculoId" />
-    <MostrarVeiculo v-model="dialog.mostrar" />
-    <ExcluirVeiculo
+    <VisualizarRegistro v-model="dialog.mostrar" tipo="corrida" :registro="registroVisualizado" />
+    <ExcluirRegistro
       :acao="openPress"
       :data="usuarioSelecionado"
       @deleted="onRequest"
@@ -45,22 +43,22 @@
             <q-td key="corrida">
               <q-item>
                 <q-item-section>
-                  <q-item-label>
+                  <q-item-label v-if="props.row.motorista?.user?.name">
                     <span class="text-bold">Motorista:</span>
                     {{ props.row.motorista.user.name }}</q-item-label
                   >
-                  <q-item-label>
+                  <q-item-label v-if="props.row.passageiro?.user?.name">
                     <span class="text-bold"> Passageiro: </span>
                     {{ props.row.passageiro.user.name }}
                   </q-item-label>
-                  <q-item-label>
+                  <q-item-label v-if="props.row.veiculo?.placa">
                     <span class="text-bold"> Veículo: </span>
                     {{ props.row.veiculo.placa }}
                   </q-item-label>
-                  <div>
+                  <div v-if="props.row.status_corrida">
                     <span class="text-bold"> Status: </span>
-                    <q-badge :color="badgeColor(props.row.status)">
-                      {{ props.row.status }}
+                    <q-badge :color="badgeColor(props.row.status_corrida)">
+                      {{ formatarStatus(props.row.status_corrida) }}
                     </q-badge>
                   </div>
                 </q-item-section>
@@ -81,47 +79,21 @@
             <q-td :props="props" key="valores">
               <q-item>
                 <q-item-section>
-                  <q-item-label>
-                    <span class="text-bold"> Valor burto: </span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.valor_bruto) }}</q-item-label
-                  >
-                  <q-item-label>
-                    <span class="text-bold"> Tarifa base: </span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.tarifa_base) }}
-                  </q-item-label>
-
-                  <q-item-label>
-                    <span class="text-bold"> Taxa espera: </span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.taxa_espera) }}
-                  </q-item-label>
-
-                  <q-item-label>
-                    <span class="text-bold"> Valor paga: </span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.valor_pago_passageiro) }}
-                  </q-item-label>
-
-                  <q-item-label>
-                    <span class="text-bold"> Desconto passageiro: </span>
-                    {{
-                      moedaBrasileira(props.row.corrida_financeiro.corrida_desconto.valor_desconto)
-                    }}
-                  </q-item-label>
-
-                  <q-item-label>
-                    <span class="text-bold">Taxa plataforma</span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.valor_plataforma) }}
-                  </q-item-label>
-
-                  <q-item-label>
-                    <span class="text-bold"> Valor motorista</span>
-                    {{ moedaBrasileira(props.row.corrida_financeiro.valor_motorista) }}
+                  <q-item-label v-for="campo in dadosFinanceiros(props.row)" :key="campo.chave">
+                    <span class="text-bold">{{ campo.label }}: </span>{{ campo.valor }}
                   </q-item-label>
                 </q-item-section>
               </q-item>
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.id)" dense flat icon="visibility">
+              <q-btn
+                @click="openVisualizar(props.row)"
+                dense
+                flat
+                icon="visibility"
+                aria-label="Visualizar registro"
+              >
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
                   visualizar
                 </q-tooltip>
@@ -140,10 +112,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
-import CriarVeiculo from 'src/components/veiculos/CriarVeiculo.vue'
-import MostrarVeiculo from 'src/components/veiculos/MostrarVeiculo.vue'
-import EditarVeiculo from 'src/components/veiculos/EditarVeiculo.vue'
-import ExcluirVeiculo from 'src/components/veiculos/ExcluirVeiculo.vue'
+import VisualizarRegistro from 'src/components/VisualizarRegistro.vue'
+import ExcluirRegistro from 'src/components/ExcluirRegistro.vue'
+import { camposDetalhes } from 'src/utils/detalhesRegistro'
+import { formatarStatus } from 'src/utils/status'
 
 // STATES
 const data = ref([])
@@ -162,7 +134,7 @@ const dialog = reactive({
   excluir: false,
 })
 
-const veiculoId = ref(null)
+const registroVisualizado = ref(null)
 
 const pagination = ref({
   page: 1,
@@ -177,18 +149,10 @@ const columns = [
   { name: 'acoes', label: 'Ações', align: 'center' },
 ]
 
-function moedaBrasileira(value) {
-  if (value === null || value === undefined) return ''
-
-  let valor = Number(value)
-
-  return valor.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
+const dadosFinanceiros = (corrida) =>
+  camposDetalhes('corrida', corrida).filter((campo) =>
+    campo.chave.startsWith('corrida_financeiro.'),
+  )
 
 const badgeColor = (status) => {
   if (status === 'solicitada') return 'orange'
@@ -221,14 +185,14 @@ const clearSearch = () => {
   buscarDados()
 }
 
-const openEditar = (id) => {
-  veiculoId.value = id
-  dialog.editar = true
+const openVisualizar = (registro) => {
+  registroVisualizado.value = registro
+  dialog.mostrar = true
 }
 
 const buscarDados = async (props) => {
   loading.value = true
-  const { page, rowsPerPage } = props ? props.pagination : pagination
+  const { page, rowsPerPage } = props?.pagination || pagination.value
   try {
     const response = await api.get('/corridas', {
       params: {

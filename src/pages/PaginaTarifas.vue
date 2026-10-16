@@ -1,9 +1,7 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- <CriarVeiculo @onRequest="onRequest" v-model="dialog.criar" /> -->
-    <EditarVeiculo @updated="onRequest" v-model="dialog.editar" :veiculoId="veiculoId" />
-    <MostrarVeiculo v-model="dialog.mostrar" />
-    <ExcluirVeiculo
+    <VisualizarRegistro v-model="dialog.mostrar" tipo="tarifa" :registro="registroVisualizado" />
+    <ExcluirRegistro
       :acao="openPress"
       :data="usuarioSelecionado"
       @deleted="onRequest"
@@ -32,15 +30,6 @@
             placeholder="Pesquisar"
             @keyup.enter="buscarDados"
           >
-            <template #before>
-              <!-- <q-btn
-                icon="add_box"
-                label="CRIAR VEÍCULO"
-                color="primary"
-                @click="dialog.criar = true"
-              /> -->
-            </template>
-
             <template v-if="search" #append>
               <q-icon name="close" class="cursor-pointer" @click="clearSearch" />
             </template>
@@ -54,10 +43,12 @@
             <q-td key="tarifa">
               <q-item>
                 <q-item-section>
-                  <q-item-label class="text-bold"> {{ props.row.produto.nome }}</q-item-label>
+                  <q-item-label class="text-bold">
+                    {{ props.row.produto?.nome || 'Tarifa geral' }}</q-item-label
+                  >
                   <q-item-label class="estilo-coluna">
-                    <div>Tafia base: {{ props.row.tarifa_base }}</div>
-                    <div>Valor por km: {{ props.row.valor_por_km }}</div>
+                    <div>Tarifa base: {{ emReais(props.row.tarifa_base) }}</div>
+                    <div>Valor por km: {{ emReais(props.row.valor_por_km) }}</div>
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -68,7 +59,13 @@
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.id)" dense flat icon="arrow_forward_ios">
+              <q-btn
+                @click="openVisualizar(props.row)"
+                dense
+                flat
+                icon="arrow_forward_ios"
+                aria-label="Visualizar registro"
+              >
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
                   visualizar
                 </q-tooltip>
@@ -87,10 +84,13 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
-// import CriarVeiculo from 'src/components/veiculos/CriarVeiculo.vue'
-import MostrarVeiculo from 'src/components/veiculos/MostrarVeiculo.vue'
-import EditarVeiculo from 'src/components/veiculos/EditarVeiculo.vue'
-import ExcluirVeiculo from 'src/components/veiculos/ExcluirVeiculo.vue'
+import VisualizarRegistro from 'src/components/VisualizarRegistro.vue'
+import ExcluirRegistro from 'src/components/ExcluirRegistro.vue'
+
+const emReais = (valor) =>
+  valor === null || valor === undefined || valor === ''
+    ? '—'
+    : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 // STATES
 const data = ref([])
@@ -109,7 +109,7 @@ const dialog = reactive({
   excluir: false,
 })
 
-const veiculoId = ref(null)
+const registroVisualizado = ref(null)
 
 const pagination = ref({
   page: 1,
@@ -147,9 +147,9 @@ const clearSearch = () => {
   buscarDados()
 }
 
-const openEditar = (id) => {
-  veiculoId.value = id
-  dialog.editar = true
+const openVisualizar = (registro) => {
+  registroVisualizado.value = registro
+  dialog.mostrar = true
 }
 
 const buscarDados = async (props) => {

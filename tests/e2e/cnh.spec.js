@@ -206,7 +206,7 @@ test('exige frente e verso, le as duas fotos com OCR e envia uma unica CNH', asy
   expect(corpo).toContain('name="arquivo"; filename="frente.png"')
   expect(corpo).toContain('name="arquivo_verso"; filename="verso.png"')
   expect(corpo).toContain('name="tipo_documento"\r\n\r\ncnh')
-  expect(corpo).toContain('name="cnh[ear]"\r\n\r\n1')
+  expect(corpo).toContain('name="informacoes_complementares[ear]"\r\n\r\n1')
   await expect(dialog).not.toBeVisible()
   expect(erros).toEqual([])
 })
@@ -336,7 +336,8 @@ test.beforeEach(async ({ page }) => {
       await route.continue()
       return
     }
-    const endpoint = url.pathname.replace(/^\/api/, '')
+    // a API do painel fica em /api/gestao
+    const endpoint = url.pathname.replace(/^\/api(?:\/gestao)?/, '')
     let data
     if (endpoint === '/usuario-logado') data = { id: 90, name: 'Operador', status: 'ativo' }
     else if (endpoint === '/motoristas') data = paginated([motorista])
@@ -525,7 +526,7 @@ test('usa os títulos e a ordem do catálogo da API e aguarda seu carregamento',
   const consultas = []
   page.on('request', (request) => {
     if (request.method() === 'GET' && request.url().includes('/motorista-documentos/'))
-      consultas.push(new URL(request.url()).pathname.replace(/^\/api/, ''))
+      consultas.push(new URL(request.url()).pathname.replace(/^\/api(?:\/gestao)?/, ''))
   })
   const catalogo = [...tiposDocumento]
     .reverse()
@@ -807,7 +808,7 @@ test('reenviar CNH preenche dados salvos, mostra motivo abaixo do EAR e preserva
   await page.route('**/motorista-documentos', (route) => {
     if (route.request().method() === 'OPTIONS') return route.fallback()
     const corpo = route.request().postData()
-    expect(corpo).toContain('name="cnh[nome]"\r\n\r\nNOME CORRIGIDO')
+    expect(corpo).toContain('name="informacoes_complementares[nome]"\r\n\r\nNOME CORRIGIDO')
     expect(corpo).not.toContain('name="motivo_reprovacao"')
     expect(corpo).not.toContain('name="descricao_reprovacao"')
     reenviado = true
@@ -876,7 +877,7 @@ test('reenviar CNH preenche dados salvos, mostra motivo abaixo do EAR e preserva
   ).toBeEnabled()
   await upload.getByRole('button', { name: 'Enviar', exact: true }).click()
   await expect(upload).not.toBeVisible()
-  await expect(documentos.getByText('em_analise', { exact: true })).toBeVisible()
+  await expect(documentos.getByText('Em análise', { exact: true })).toBeVisible()
   await expect(
     documentos.getByRole('button', { name: 'Reenviar documento', exact: true }),
   ).toHaveCount(0)
@@ -1049,7 +1050,10 @@ test('reenvio de outros documentos também mostra motivo apenas para leitura', a
   await expect(upload.getByRole('group', { name: 'Campos da CNH' })).toHaveCount(0)
 })
 
-for (const tipo of tiposDocumento.filter((item) => !item.possui_dados_cnh)) {
+// CRLV e Nada Consta têm formulário próprio (SubirCrlv/SubirNadaConsta)
+for (const tipo of tiposDocumento.filter(
+  (item) => !item.possui_dados_cnh && !['crlv', 'nada_consta'].includes(item.tipo_documento),
+)) {
   test(`envia ${tipo.titulo} com o valor do enum retornado pela API`, async ({ page }) => {
     const upload = page.locator('.documento-dialog')
     await upload.getByRole('button', { name: 'Cancelar', exact: true }).click()
@@ -1067,7 +1071,7 @@ for (const tipo of tiposDocumento.filter((item) => !item.possui_dados_cnh)) {
     await upload.getByRole('button', { name: 'Enviar', exact: true }).click()
     const request = await enviado
     expect(request.postData()).toContain(`name="tipo_documento"\r\n\r\n${tipo.tipo_documento}`)
-    expect(request.postData()).not.toContain('name="cnh[')
+    expect(request.postData()).not.toContain('name="informacoes_complementares[')
     await expect(upload).not.toBeVisible()
   })
 }
@@ -1098,9 +1102,9 @@ test('preenche os campos, exibe a previa e envia os dados no motorista correto',
   const request = await sent
   expect(request.postData()).toContain('name="motorista_id"\r\n\r\n7')
   expect(request.postData()).toContain('name="tipo_documento"\r\n\r\ncnh')
-  expect(request.postData()).toContain('name="cnh[numero_registro]"\r\n\r\n00024681357')
-  expect(request.postData()).not.toContain('cnh[cnh_numero]')
-  expect(request.postData()).toContain('name="cnh[observacao]"\r\n\r\nA, B')
+  expect(request.postData()).toContain('name="informacoes_complementares[numero_registro]"\r\n\r\n00024681357')
+  expect(request.postData()).not.toContain('informacoes_complementares[cnh_numero]')
+  expect(request.postData()).toContain('name="informacoes_complementares[observacao]"\r\n\r\nA, B')
   await expect(dialog).not.toBeVisible()
   expect(errors).toEqual([])
 })
@@ -1116,7 +1120,7 @@ test('troca o PDF e preserva o nome editado manualmente', async ({ page }) => {
   await expect(dialog.getByLabel('Nome na CNH', { exact: true })).toHaveValue('NOME CONFERIDO')
   await expect(dialog.getByLabel('Número de registro', { exact: true })).toHaveValue('00033333333')
   await expect(dialog.getByLabel('CPF', { exact: true })).toHaveValue('')
-  await dialog.locator('.q-file [aria-label="Clear"]').click()
+  await dialog.locator('.q-file [aria-label="Limpar"]').click()
   await expect(dialog.locator('iframe')).toHaveCount(0)
   await expect(dialog.getByRole('status')).toHaveCount(0)
 })

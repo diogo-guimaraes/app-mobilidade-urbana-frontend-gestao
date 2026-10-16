@@ -1,344 +1,343 @@
 <template>
-  <div :class="$q.dark.isActive ? 'dark_mode' : ''">
-    <q-dialog v-model="model" @before-show="onBeforeShow" @before-hide="quandoDialogFechar">
-      <q-card style="width: 700px; max-width: 80vw" class="row q-col-gutter-sm">
-        <q-card-section>
-          <q-form @submit.prevent="onSubmit">
-            <div class="row">
-              <!-- IMAGEM -->
-              <div class="col-12">
-                <q-card-section class="flex justify-center">
-                  <q-avatar size="12rem" v-if="imagemProfile">
-                    <q-img ratio="1" :src="imagemProfile">
-                      <div class="flex caption absolute-full text-h5 flex-center">
-                        <span class="btn fileinput-button">
-                          <q-icon name="photo_camera" color="white" />
-                          <br />Alterar<br />imagem
-                          <input type="file" @change="imageSelected" />
-                        </span>
-                      </div>
-                    </q-img>
-                  </q-avatar>
-
-                  <q-avatar v-else color="primary" size="12rem">
-                    <div class="flex absolute-full text-h5 flex-center">
-                      <span class="btn fileinput-button">
-                        <q-icon name="add_photo_alternate" size="40px" color="white" />
-                        <br />Adicionar<br />imagem
-                        <input type="file" @change="imageSelected" />
-                      </span>
-                    </div>
-                  </q-avatar>
-                </q-card-section>
-
-                <div class="flex justify-center">
-                  <q-btn
-                    v-if="imagemProfile"
-                    flat
-                    icon="close"
-                    color="primary"
-                    label="REMOVER IMAGEM"
-                    @click="removerImagem"
-                  />
+  <q-dialog v-model="model" :persistent="salvando" @before-show="limparForm" @hide="limparForm">
+    <q-card class="cadastro-usuario">
+      <q-toolbar>
+        <q-avatar rounded color="primary" text-color="white" icon="person_add_alt" />
+        <q-toolbar-title class="text-weight-bold">{{ configuracao?.titulo }}</q-toolbar-title>
+        <q-btn
+          flat
+          round
+          dense
+          icon="close"
+          aria-label="Fechar cadastro"
+          :disable="salvando"
+          v-close-popup
+        />
+      </q-toolbar>
+      <q-separator />
+      <q-form @submit="cadastrarUsuario">
+        <q-card-section class="campos-cadastro">
+          <template v-if="possuiConta">
+            <q-card-section class="flex justify-center">
+              <q-avatar v-if="imagemProfile" size="12rem">
+                <q-img :ratio="1" :src="imagemProfile" alt="Foto de perfil">
+                  <div class="flex caption absolute-full text-h5 flex-center">
+                    <span class="btn fileinput-button">
+                      <q-icon name="photo_camera" color="white" />
+                      <br />Alterar<br />imagem
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        aria-label="Alterar imagem"
+                        :disabled="salvando"
+                        @change="imageSelected"
+                      />
+                    </span>
+                  </div>
+                </q-img>
+              </q-avatar>
+              <q-avatar v-else color="primary" size="12rem">
+                <div class="flex absolute-full text-h5 flex-center">
+                  <span class="btn fileinput-button">
+                    <q-icon name="add_photo_alternate" size="40px" color="white" />
+                    <br />Adicionar<br />imagem
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp"
+                      aria-label="Adicionar imagem"
+                      :disabled="salvando"
+                      @change="imageSelected"
+                    />
+                  </span>
                 </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <!-- INPUTS -->
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    v-model="usuario.name"
-                    label="Nome completo *"
-                    outlined
-                    dense
-                    :rules="[(val) => val.length >= 3 || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    v-model="usuario.telefone"
-                    label="Telefone *"
-                    outlined
-                    dense
-                    mask="(##) ##### - ####"
-                    :rules="[(val) => val.length >= 17 || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    v-model="usuario.cpf"
-                    label="CPF *"
-                    outlined
-                    dense
-                    mask="###.###.###-##"
-                    :rules="[(val) => val.length >= 14 || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    label="Data Nascimento"
-                    dense
-                    mask="##/##/####"
-                    outlined
-                    v-model="usuario.data_nascimento"
-                    :rules="[(data_inicial) => validateDateFormat(data_inicial)]"
-                  >
-                    <template v-slot:append>
-                      <q-icon name="event" class="cursor-pointer">
-                        <q-popup-proxy
-                          ref="qDateProxy"
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-date
-                            v-model="usuario.data_nascimento"
-                            mask="DD/MM/YYYY"
-                            @input="() => inputData()"
-                          ></q-date>
-                        </q-popup-proxy>
-                      </q-icon>
-                    </template>
-                  </q-input>
-                </q-item>
-              </div>
-
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    v-model="usuario.email"
-                    label="Email *"
-                    outlined
-                    dense
-                    :rules="[(val) => val.length >= 1 || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-              <div class="col-md-6 col-12">
-                <q-item>
-                  <q-input
-                    class="full-width"
-                    v-model="usuario.password"
-                    label="Senha"
-                    type="password"
-                    outlined
-                    dense
-                    :rules="[(val) => val.length >= 3 || 'Campo obrigatório']"
-                  />
-                </q-item>
-              </div>
-            </div>
-            <q-card-actions class="q-mt-md" align="center">
-              <q-btn flat label="Cancelar" v-close-popup />
-              <q-btn type="submit" color="primary" icon-right="save" label="Salvar" />
+              </q-avatar>
+            </q-card-section>
+            <div class="flex justify-center q-mb-md">
               <q-btn
-                @click="preecherDados"
-                color="green"
-                icon-right="edit"
-                label="Preencher dados"
+                v-if="imagemProfile"
+                flat
+                dense
+                label="Remover imagem"
+                color="primary"
+                icon="close"
+                :disable="salvando"
+                @click="image = null"
               />
-            </q-card-actions>
-          </q-form>
+            </div>
+            <div v-if="erros.image" class="text-negative text-caption text-center q-mb-md">
+              {{ erros.image }}
+            </div>
+          </template>
+          <div class="row q-col-gutter-md">
+            <q-input
+              v-model="usuario.name"
+              class="col-12"
+              dense
+              outlined
+              label="Nome completo *"
+              maxlength="255"
+              :disable="salvando"
+              :rules="[(val) => val?.trim().length >= 3 || 'Informe o nome completo']"
+              :error="!!erros.name"
+              :error-message="erros.name"
+            />
+            <q-input
+              v-model="usuario.cpf"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="CPF *"
+              mask="###.###.###-##"
+              unmasked-value
+              :disable="salvando"
+              :rules="[(val) => /^\d{11}$/.test(val || '') || 'Informe os 11 dígitos do CPF']"
+              :error="!!erros.cpf"
+              :error-message="erros.cpf"
+            />
+            <q-input
+              v-model="usuario.data_nascimento"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Data de nascimento *"
+              type="date"
+              stack-label
+              :disable="salvando"
+              :max="hoje"
+              :rules="[(val) => !!val || 'Informe a data de nascimento']"
+              :error="!!erros.data_nascimento"
+              :error-message="erros.data_nascimento"
+            />
+            <template v-if="possuiConta">
+              <q-input
+                v-model="usuario.telefone"
+                class="col-12 col-sm-6"
+                dense
+                outlined
+                label="Telefone"
+                mask="(##) #####-####"
+                unmasked-value
+                :disable="salvando"
+                :rules="[(val) => !val || /^\d{10,11}$/.test(val) || 'Informe um telefone com DDD']"
+                :error="!!erros.telefone"
+                :error-message="erros.telefone"
+              />
+              <q-input
+                v-model="usuario.email"
+                class="col-12 col-sm-6"
+                dense
+                outlined
+                label="E-mail *"
+                type="email"
+                :disable="salvando"
+                maxlength="255"
+                :rules="[(val) => !!val?.trim() || 'Informe o e-mail']"
+                :error="!!erros.email"
+                :error-message="erros.email"
+              />
+              <q-input
+                v-model="usuario.password"
+                class="col-12 col-sm-6"
+                dense
+                outlined
+                label="Senha *"
+                type="password"
+                autocomplete="new-password"
+                maxlength="255"
+                :disable="salvando"
+                :rules="[(val) => val?.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']"
+                :error="!!erros.password"
+                :error-message="erros.password"
+              />
+              <q-input
+                v-model="usuario.password_confirmation"
+                class="col-12 col-sm-6"
+                dense
+                outlined
+                label="Confirmar senha *"
+                type="password"
+                autocomplete="new-password"
+                :disable="salvando"
+                :rules="[(val) => (!!val && val === usuario.password) || 'As senhas não conferem']"
+              />
+            </template>
+          </div>
         </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+        <q-separator />
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" :disable="salvando" v-close-popup />
+          <q-btn
+            type="submit"
+            color="primary"
+            icon-right="save"
+            label="Salvar"
+            :loading="salvando"
+          />
+          <q-btn
+            v-if="desenvolvimento"
+            color="green"
+            icon-right="edit"
+            label="Preencher dados"
+            :disable="salvando"
+            @click="preencherDados"
+          />
+        </q-card-actions>
+      </q-form>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
-import moment from 'moment'
 
-// PROPS
 const props = defineProps({
   modelValue: Boolean,
+  tipoUsuario: {
+    type: String,
+    default: 'usuario',
+    validator: (val) => ['usuario', 'gestor', 'motorista', 'passageiro'].includes(val),
+  },
 })
-
-// EMITS
 const emit = defineEmits(['update:modelValue', 'created'])
-
-// Q
 const $q = useQuasar()
-
-// MODEL
+const tipos = {
+  usuario: { titulo: 'Criar usuário', rota: 'users', conta: false },
+  gestor: { titulo: 'Criar gestor', rota: 'gestores', conta: true },
+  motorista: { titulo: 'Criar motorista', rota: 'motoristas', conta: true },
+  passageiro: { titulo: 'Criar passageiro', rota: 'passageiros', conta: true },
+}
+const configuracao = computed(() => tipos[props.tipoUsuario])
+const possuiConta = computed(() => !!configuracao.value?.conta)
 const model = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
 })
-
-const image = ref(null)
-const imagemProfile = ref('')
-
-// FORM
 const usuario = reactive({
   name: '',
-  telefone: '',
   cpf: '',
   data_nascimento: '',
+  telefone: '',
   email: '',
   password: '',
-  type: '',
+  password_confirmation: '',
 })
+const image = ref(null)
+const imagemProfile = ref('')
+const salvando = ref(false)
+const erros = ref({})
+const desenvolvimento = process.env.DEV
+const dataAtual = new Date()
+const hoje = `${dataAtual.getFullYear()}-${String(dataAtual.getMonth() + 1).padStart(2, '0')}-${String(dataAtual.getDate()).padStart(2, '0')}`
 
-// METHODS
-function quandoDialogFechar() {
-  limparForm()
+function limparPreview() {
+  if (imagemProfile.value) URL.revokeObjectURL(imagemProfile.value)
+  imagemProfile.value = ''
 }
-
-function validateDateFormat(date) {
-  const regex = /^\d{2}\/\d{2}\/\d{4}$/
-
-  if (!date) return true
-
-  if (!regex.test(date)) {
-    return 'Formato de data inválido (DD/MM/YYYY)'
-  }
-
-  const [day, month, year] = date.split('/').map(Number)
-
-  // Verificar se o dia está no intervalo de 1 a 31 (dependendo do mês)
-  if (day < 1 || day > 31) {
-    return 'Dia inválido'
-  }
-
-  // Verificar se o mês está no intervalo de 1 a 12
-  if (month < 1 || month > 12) {
-    return 'Mês inválido'
-  }
-
-  // Verificar se o ano é maior que 0 (não negativo)
-  if (year <= 0) {
-    return 'Ano inválido'
-  }
-
-  // Verificar se o dia é válido para o mês (considerando anos bissextos)
-  const daysInMonth = new Date(year, month, 0).getDate()
-  if (day > daysInMonth) {
-    return 'Dia inválido para o mês selecionado'
-  }
-
-  return true
-}
-
+watch(image, (arquivo) => {
+  limparPreview()
+  if (arquivo) imagemProfile.value = URL.createObjectURL(arquivo)
+})
+onBeforeUnmount(limparPreview)
+watch(
+  () => props.tipoUsuario,
+  () => {
+    if (model.value && !salvando.value) limparForm()
+  },
+)
 function limparForm() {
   image.value = null
-  imagemProfile.value = ''
+  limparPreview()
+  erros.value = {}
   Object.assign(usuario, {
     name: '',
-    telefone: '',
     cpf: '',
     data_nascimento: '',
+    telefone: '',
     email: '',
     password: '',
+    password_confirmation: '',
   })
 }
-
-function onBeforeShow() {
-  // simulação
-  console.log(onBeforeShow)
+function fotoRejeitada() {
+  $q.notify({ type: 'warning', message: 'Selecione uma foto JPG, PNG ou WEBP de até 5 MB.' })
 }
-
-function imageSelected(e) {
-  const file = e.target.files?.[0]
-
-  if (!file) {
-    console.warn('Nenhuma imagem selecionada')
+function imageSelected(event) {
+  const arquivo = event.target.files?.[0]
+  event.target.value = ''
+  if (!arquivo || salvando.value) return
+  const tipoValido =
+    ['image/jpeg', 'image/png', 'image/webp'].includes(arquivo.type) ||
+    (!arquivo.type && /\.(jpe?g|png|webp)$/i.test(arquivo.name))
+  if (!tipoValido || arquivo.size > 5 * 1024 * 1024) {
+    fotoRejeitada()
     return
   }
-
-  image.value = file
-
-  const reader = new FileReader()
-  reader.onload = (ev) => {
-    imagemProfile.value = ev.target.result
-  }
-  reader.readAsDataURL(file)
+  delete erros.value.image
+  image.value = arquivo
 }
-
-function removerImagem() {
-  imagemProfile.value = ''
-  image.value = null
-}
-
-function onSubmit() {
-  cadastrarUsuario()
-}
-
-function preecherDados() {
+function preencherDados() {
+  const identificador = Date.now()
   Object.assign(usuario, {
-    name: 'name',
-    telefone: '69981400661',
-    cpf: '11149897291',
-    data_nascimento: '21/11/1992',
-    email: 'mail@mail.com',
-    password: '123',
-    type: 'motorista',
+    name: 'Usuário de teste',
+    cpf: String(identificador).slice(-11),
+    data_nascimento: '1992-11-21',
+    telefone: `699${String(identificador).slice(-8)}`,
+    email: `${props.tipoUsuario}.${identificador}@example.com`,
+    password: 'password',
+    password_confirmation: 'password',
   })
 }
-
-function cadastrarUsuario() {
-  // 📅 FORMATAR DATA (DD/MM/YYYY → YYYY/MM/DD)
-  console.log(usuario, 'usuario data1')
-
-  const dataFormatada = usuario.data_nascimento
-    ? moment(usuario.data_nascimento, 'DD/MM/YYYY').format('YYYY/MM/DD')
-    : null
-  console.log(usuario, 'usuario data2')
-
-  // 🧼 LIMPAR CPF (remove tudo que não for número)
-  const cpfLimpo = usuario.cpf ? usuario.cpf.replace(/\D/g, '') : ''
-
-  const data = new FormData()
-
-  if (image.value) data.append('image', image.value)
-
-  // CLONE para não alterar o objeto original
-  const payload = {
-    ...usuario,
-    data_nascimento: dataFormatada,
-    cpf: cpfLimpo,
+async function cadastrarUsuario() {
+  if (salvando.value) return
+  if (!configuracao.value) {
+    $q.notify({ type: 'negative', message: 'Tipo de cadastro inválido.' })
+    return
   }
-
-  Object.keys(payload).forEach((key) => {
-    data.append(key, payload[key] ?? '')
-  })
-
-  api
-    .post('/users', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+  salvando.value = true
+  erros.value = {}
+  const payload = new FormData()
+  for (const campo of ['name', 'cpf', 'data_nascimento'])
+    payload.append(campo, usuario[campo].trim())
+  if (possuiConta.value) {
+    for (const campo of ['email', 'telefone']) payload.append(campo, usuario[campo]?.trim() || '')
+    for (const campo of ['password', 'password_confirmation']) payload.append(campo, usuario[campo])
+    if (image.value) payload.append('image', image.value)
+  }
+  try {
+    const { data } = await api.post(configuracao.value.rota, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
-    .then((res) => {
-      $q.notify({ type: 'positive', message: res.data.message })
-      emit('created')
-      model.value = false
+    $q.notify({ type: 'positive', message: data.message || 'Cadastro realizado com sucesso.' })
+    emit('created', data.gestor || data.data || data.user)
+    model.value = false
+  } catch (erro) {
+    erros.value = Object.fromEntries(
+      Object.entries(erro.response?.data?.errors || {}).map(([campo, mensagens]) => [
+        campo,
+        mensagens[0],
+      ]),
+    )
+    $q.notify({
+      type: 'negative',
+      message: erro.response?.data?.message || 'Não foi possível realizar o cadastro.',
     })
-    .catch((err) => {
-      $q.notify({ type: 'negative', message: err.response?.data?.message })
-    })
+  } finally {
+    salvando.value = false
+  }
 }
 </script>
 
 <style scoped>
-/* CSS ORIGINAL MANTIDO */
+.cadastro-usuario {
+  width: 700px;
+  max-width: 95vw;
+}
+.campos-cadastro {
+  max-height: 70vh;
+  overflow-y: auto;
+}
 .caption {
   opacity: 0;
   transition: linear 1s;
@@ -360,9 +359,6 @@ function cadastrarUsuario() {
   user-select: none;
   border: 1px solid transparent;
   border-radius: 4px;
-}
-.btn-success {
-  color: #fff;
 }
 .fileinput-button {
   position: relative;

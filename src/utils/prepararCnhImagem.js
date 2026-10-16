@@ -1,6 +1,10 @@
-export async function criarPreparadorCnh(signal, onProgress = () => {}) {
+export async function criarPreparadorCnh(
+  signal,
+  onProgress = () => {},
+  { documento = 'CNH' } = {},
+) {
   signal.throwIfAborted()
-  onProgress('Carregando o tratamento das fotos da CNH…')
+  onProgress(`Carregando o tratamento das fotos ${documento === 'CRLV' ? 'do CRLV' : 'da CNH'}…`)
   const base = new URL(`${import.meta.env.BASE_URL}ocr/`, window.location.href)
   const worker = new Worker(new URL('preparar-cnh.worker.js', base))
   let pendente
@@ -57,7 +61,7 @@ export async function criarPreparadorCnh(signal, onProgress = () => {}) {
       const bitmap = await createImageBitmap(arquivo)
       try {
         signal.throwIfAborted()
-        return await solicitar({ tipo: 'preparar', bitmap }, [bitmap])
+        return await solicitar({ tipo: 'preparar', bitmap, documento }, [bitmap])
       } finally {
         bitmap.close()
       }

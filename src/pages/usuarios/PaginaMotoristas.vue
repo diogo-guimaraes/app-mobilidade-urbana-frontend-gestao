@@ -1,15 +1,25 @@
 <template>
   <q-page class="q-pa-md">
-    <CriarMotorista @created="onRequest" v-model="dialog.cadastrar" />
-    <EditarUsuario @updated="onRequest" v-model="dialog.editar" :usuarioId="usuarioId" />
-    <MostrarUsuario v-model="dialog.visualizar" />
+    <CriarUsuario tipoUsuario="motorista" @created="onRequest" v-model="dialog.cadastrar" />
+    <MostrarUsuario
+      v-model="dialog.visualizar"
+      :usuario-id="usuarioId"
+      tipoUsuario="motorista"
+      :registro="registroVisualizado"
+      @updated="onRequest"
+    />
     <DocumentosUsuario
       :usuario="usuario"
       :motorista-id="motoristaId"
       v-model="dialog.documentos"
       @updated="onRequest"
     />
-    <MotoristaVeiculos :usuario="usuario" v-model="dialog.veiculos" />
+    <MotoristaVeiculos
+      :usuario="usuario"
+      :motorista-id="motoristaId"
+      v-model="dialog.veiculos"
+      @updated="onRequest"
+    />
     <ExcluirUsuario
       :acao="openPress"
       :data="usuarioSelecionado"
@@ -50,6 +60,7 @@
                 class="q-mr-sm"
                 icon="person_add_alt"
                 label="CRIAR MOTORISTA"
+                v-if="pode('usuarios.gerenciar')"
                 color="primary"
                 @click="dialog.cadastrar = true"
               />
@@ -84,30 +95,36 @@
             <q-td key="motorista">
               <q-item>
                 <q-item-section top avatar>
-                  <q-avatar v-if="props.row.user.foto_thumbnail">
-                    <img :src="props.row.user.foto" />
+                  <q-avatar v-if="props.row.foto">
+                    <img :src="props.row.foto" />
                   </q-avatar>
                   <q-avatar v-else color="primary" text-color="white">
-                    {{ props.row.user.name.substr(0, 1) }}
+                    {{ props.row.user?.name?.charAt(0) }}
                   </q-avatar>
-                  <q-badge class="q-mt-sm" :color="badgeColor(props.row.user.status)">
-                    {{ props.row.user.status }}
+                  <q-badge class="q-mt-sm" :color="badgeColor(props.row.status)">
+                    {{ props.row.status === 'ativo' ? 'Ativo' : 'Pendente' }}
                   </q-badge>
                 </q-item-section>
 
                 <q-item-section>
                   <q-item-label class="text-bold"> {{ props.row.user.name }}</q-item-label>
                   <q-item-label class="estilo-coluna">
-                    {{ props.row.user.email }}
+                    <div v-if="props.row.email">{{ props.row.email }}</div>
                     <div>CPF: {{ props.row.user.cpf }}</div>
-                    <div>TEL: {{ props.row.user.telefone }}</div>
+                    <div v-if="props.row.telefone">TEL: {{ props.row.telefone }}</div>
                   </q-item-label>
                 </q-item-section>
               </q-item>
             </q-td>
 
             <q-td key="acoes" align="center">
-              <q-btn @click="openEditar(props.row.user.id)" dense flat icon="visibility">
+              <q-btn
+                @click="openVisualizar(props.row)"
+                dense
+                flat
+                icon="visibility"
+                aria-label="Visualizar registro"
+              >
                 <template v-slot:loading>
                   <q-spinner-hourglass />
                 </template>
@@ -134,6 +151,7 @@
                   () => {
                     dialog.veiculos = true
                     usuario = props.row.user
+                    motoristaId = props.row.id
                   }
                 "
                 dense
@@ -145,7 +163,13 @@
                 </q-tooltip>
               </q-btn>
 
-              <q-btn @click="openExcluir(props.row)" dense flat icon="delete">
+              <q-btn
+                v-if="pode('usuarios.gerenciar')"
+                @click="openExcluir(props.row)"
+                dense
+                flat
+                icon="delete"
+              >
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
                   arquivar
                 </q-tooltip>
@@ -159,11 +183,12 @@
 </template>
 
 <script setup>
+import { useAuthStore } from 'src/stores/auth'
+const { pode } = useAuthStore()
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
-import CriarMotorista from 'src/components/motorista/CriarMotorista.vue'
+import CriarUsuario from 'src/components/usuarios/CriarUsuario.vue'
 import MostrarUsuario from 'src/components/usuarios/MostrarUsuario.vue'
-import EditarUsuario from 'src/components/usuarios/EditarUsuario.vue'
 import ExcluirUsuario from 'src/components/usuarios/ExcluirUsuario.vue'
 import DocumentosUsuario from 'src/components/usuarios/DocumentosUsuario.vue'
 import MotoristaVeiculos from 'src/components/motorista/MotoristaVeiculos.vue'
@@ -191,6 +216,7 @@ const dialog = reactive({
 })
 
 const usuarioId = ref(null)
+const registroVisualizado = ref(null)
 const usuario = ref({})
 const motoristaId = ref(null)
 
@@ -206,9 +232,7 @@ const columns = [
 ]
 
 const badgeColor = (status) => {
-  if (status === 'aprovado') return 'green'
-  if (status === 'suspenso') return 'orange'
-  if (status === 'banido') return 'red'
+  return status === 'ativo' ? 'green' : 'warning'
 }
 
 // const toggleGrid = () => {
@@ -221,9 +245,10 @@ const clearSearch = () => {
   buscarDados()
 }
 
-const openEditar = (id) => {
-  usuarioId.value = id
-  dialog.editar = true
+const openVisualizar = (registro) => {
+  usuarioId.value = registro.id
+  registroVisualizado.value = registro
+  dialog.visualizar = true
 }
 
 const openExcluir = (usuario) => {
