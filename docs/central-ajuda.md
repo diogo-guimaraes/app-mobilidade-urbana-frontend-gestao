@@ -88,6 +88,8 @@ No frontend, `src/services/echo.js` usa o cliente Axios do app para autorizaçã
 
 ## Rotas do backend e contratos de integração
 
+O componente **Histórico da corrida** também é reutilizado em **Motoristas saldo**, com detalhes e mapa à esquerda e conversa somente para consulta à direita. Nesse contexto, consulta GET /api/gestao/motoristas-saldo/{movimentacao}/corrida/mensagens e assina o canal privado corrida.{id}.chat.financeiro, com permissão financeiro.consultar e vínculo ao lançamento. A Central de ajuda mantém suas próprias rotas e regras de acesso aos tickets. Consulte [motoristas-saldo.md](motoristas-saldo.md) para o contrato financeiro.
+
 Os caminhos abaixo já incluem `/api`. Em desenvolvimento, acrescente `http://localhost` antes da rota. Envie `Authorization: Bearer <token>` e `Accept: application/json`; nos POSTs/PATCHs com JSON, também `Content-Type: application/json`. Para anexos, use multipart com boundary definido pelo cliente HTTP.
 
 Use JWT de `Gestor` nas rotas `/api/gestao/...` e JWT de `User` nas rotas dos aplicativos. A gestão continua usando `POST /api/gestao/auth/login` com `{email, password}` para autenticar. `{ticket}` é o ID numérico do atendimento; `{corrida}` é o ID numérico da corrida. Nas tabelas abaixo, `?` indica campo opcional, não faz parte do nome enviado no JSON.

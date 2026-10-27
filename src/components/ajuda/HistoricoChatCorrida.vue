@@ -7,7 +7,13 @@
     <div v-if="!corridaId" class="col flex flex-center q-pa-lg text-grey-7">
       <div class="text-center">
         <q-icon name="route" size="48px" color="blue-2" />
-        <p class="q-mt-sm">Este ticket não possui uma corrida vinculada.</p>
+        <p class="q-mt-sm">
+          {{
+            movimentacaoId
+              ? 'Esta movimentação não possui uma corrida vinculada.'
+              : 'Este ticket não possui uma corrida vinculada.'
+          }}
+        </p>
       </div>
     </div>
     <template v-else>
@@ -91,15 +97,18 @@
 </template>
 
 <script setup>
-import { toRef } from 'vue'
+import { computed, toRef } from 'vue'
 import DetalhesCorrida from 'src/components/ajuda/DetalhesCorrida.vue'
 import { useHistoricoChatCorrida } from 'src/composables/useHistoricoChatCorrida'
 import { horarioTicket } from 'src/utils/tickets'
 const props = defineProps({
-  ticketId: { type: Number, required: true },
+  ticketId: { type: Number, default: null },
+  movimentacaoId: { type: Number, default: null },
   corridaId: { type: Number, default: null },
 })
 const emit = defineEmits(['acesso-perdido'])
+const registroId = computed(() => props.movimentacaoId ?? props.ticketId)
+const origem = computed(() => (props.movimentacaoId != null ? 'saldo' : 'ticket'))
 const {
   mensagens,
   corrida,
@@ -111,8 +120,11 @@ const {
   tempoReal,
   carregarAntigas,
   atualizar,
-} = useHistoricoChatCorrida(toRef(props, 'ticketId'), toRef(props, 'corridaId'), () =>
-  emit('acesso-perdido'),
+} = useHistoricoChatCorrida(
+  registroId,
+  toRef(props, 'corridaId'),
+  () => emit('acesso-perdido'),
+  origem,
 )
 </script>
 

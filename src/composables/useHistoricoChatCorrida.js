@@ -4,7 +4,12 @@ import { getEcho, conectadoChat } from 'src/services/echo'
 import { useAtualizacaoSemConexao } from 'src/composables/useAtualizacaoSemConexao'
 import { erroTicket } from 'src/utils/tickets'
 
-export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
+export function useHistoricoChatCorrida(
+  registroId,
+  corridaId,
+  perdeuAcesso,
+  origem = ref('ticket'),
+) {
   const mensagens = ref([])
   const corrida = ref(null)
   const carregando = ref(false)
@@ -15,7 +20,7 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
   const acessoNegado = ref(false)
   const mensagensEl = ref(null)
   const habilitado = computed(
-    () => !!ticketId.value && !!corridaId.value && !carregando.value && !acessoNegado.value,
+    () => !!registroId.value && !!corridaId.value && !carregando.value && !acessoNegado.value,
   )
   let versao = 0
   let controller
@@ -48,8 +53,9 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
     }
   }
 
-  async function buscar(params, epoch, id = ticketId.value, signal = controller.signal) {
-    const { data } = await api.get(`/ajuda/tickets/${id}/corrida/mensagens`, { params, signal })
+  async function buscar(params, epoch, id = registroId.value, signal = controller.signal) {
+    const base = origem.value === 'saldo' ? '/motoristas-saldo/' : '/ajuda/tickets/'
+    const { data } = await api.get(base + id + '/corrida/mensagens', { params, signal })
     if (epoch !== versao) return null
     corrida.value = data.corrida
     const unicas = new Map(mensagens.value.map((item) => [item.id, item]))
@@ -68,7 +74,11 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
     if (epoch !== versao || canal) return
     echo = getEcho()
     if (!echo) return
-    canal = `corrida.${corridaId.value}.chat.suporte`
+    canal =
+      'corrida.' +
+      corridaId.value +
+      '.chat.' +
+      (origem.value === 'saldo' ? 'financeiro' : 'suporte')
     echo
       .private(canal)
       .listen('.corrida.mensagem', (event) => {
@@ -93,7 +103,7 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
       return sincronizando
     }
     const epoch = versao
-    const id = ticketId.value
+    const id = registroId.value
     const signal = controller.signal
     const proximoDoFim =
       !mensagensEl.value ||
@@ -134,7 +144,7 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
     maisAntigas.value = false
     anteriores.value = false
     carregando.value = false
-    if (!ticketId.value || !corridaId.value) return
+    if (!registroId.value || !corridaId.value) return
     const epoch = versao
     controller = new AbortController()
     carregando.value = true
@@ -173,7 +183,7 @@ export function useHistoricoChatCorrida(ticketId, corridaId, perdeuAcesso) {
   }
 
   useAtualizacaoSemConexao(autorizado, habilitado, sincronizar)
-  watch([ticketId, corridaId], abrir, { immediate: true })
+  watch([registroId, corridaId, origem], abrir, { immediate: true })
   onBeforeUnmount(limpar)
   return {
     mensagens,
