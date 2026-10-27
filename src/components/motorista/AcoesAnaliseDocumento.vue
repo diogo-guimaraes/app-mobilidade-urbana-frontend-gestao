@@ -35,7 +35,12 @@ import { api } from 'boot/axios'
 import JanelaConfirmacao from 'src/components/JanelaConfirmacao.vue'
 import ReprovarDocumento from 'src/components/motorista/ReprovarDocumento.vue'
 
-const props = defineProps({ documento: Object, disable: Boolean, loading: Boolean })
+const props = defineProps({
+  documento: Object,
+  disable: Boolean,
+  loading: Boolean,
+  beforeApprove: Function,
+})
 const emit = defineEmits(['updated', 'update:loading'])
 const $q = useQuasar()
 const confirmar = ref(false)
@@ -45,6 +50,7 @@ async function aprovar() {
   if (props.disable || props.loading || !props.documento?.id) return
   emit('update:loading', true)
   try {
+    if (props.beforeApprove && (await props.beforeApprove()) === false) return
     const response = await api.put(`/mudar-status-documento/${props.documento.id}`, {
       status: 'aprovado',
     })

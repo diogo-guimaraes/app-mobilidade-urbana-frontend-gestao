@@ -39,7 +39,8 @@
         :rows="usuarios.data"
         :columns="columns"
         row-key="id"
-        :pagination="pagination"
+        v-model:pagination="pagination"
+        :rows-per-page-options="[10, 25, 50]"
         :grid="grid"
         :loading="loading"
         @request="onRequest"
@@ -53,7 +54,7 @@
             debounce="300"
             v-model="search"
             placeholder="Pesquisar"
-            @keyup.enter="buscarDados()"
+            @keyup.enter="aplicarFiltros"
           >
             <template #before>
               <q-btn
@@ -70,7 +71,7 @@
                 @update:model-value="
                   (val) => {
                     dominio = val
-                    buscarDados()
+                    aplicarFiltros()
                   }
                 "
                 v-model="dominio"
@@ -222,7 +223,8 @@ const motoristaId = ref(null)
 
 const pagination = ref({
   page: 1,
-  rowsPerPage: 5,
+  rowsPerPage: 10,
+  rowsNumber: 0,
 })
 
 const columns = [
@@ -241,6 +243,10 @@ const badgeColor = (status) => {
 
 const clearSearch = () => {
   search.value = ''
+  aplicarFiltros()
+}
+
+const aplicarFiltros = () => {
   pagination.value.page = 1
   buscarDados()
 }
@@ -278,7 +284,7 @@ const buscarDados = async (props) => {
 
     pagination.value.rowsNumber = data.total
     pagination.value.page = data.current_page
-    pagination.value.rowsPerPage = data.per_page === data.total ? 0 : data.per_page
+    pagination.value.rowsPerPage = data.per_page
   } catch (error) {
     console.error(error)
   } finally {

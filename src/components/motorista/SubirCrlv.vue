@@ -101,7 +101,7 @@
                 RENAVAM: {{ veiculo.renavam }}<br />Chassi: {{ veiculo.chassi || 'Não cadastrado' }}
               </div>
             </q-banner>
-            <q-banner v-else class="bg-blue-1 q-mb-md" rounded>
+            <q-banner v-else-if="!solicitacaoPendente" class="bg-blue-1 q-mb-md" rounded>
               Ao enviar o CRLV, o veículo será salvo e vinculado ao motorista. Ele aparecerá na
               lista de veículos com o status em análise até a aprovação do documento.
             </q-banner>
@@ -114,7 +114,7 @@
               outlined
               clearable
               :label="anexoSalvoAtivo ? 'Arquivo atual' : 'Selecione o CRLV'"
-              :readonly="anexoSalvoAtivo"
+              :readonly="anexoSalvoAtivo || solicitacaoPendente"
               :stack-label="anexoSalvoAtivo"
               :display-value="anexoSalvoAtivo ? nomeSalvo : undefined"
               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
@@ -124,14 +124,16 @@
               :error="!!errors.arquivo"
               :error-message="errors.arquivo?.[0]"
               :hint="
-                anexoSalvoAtivo
-                  ? 'Remova o documento atual para selecionar um novo arquivo.'
-                  : 'PDF, JPG ou PNG de até 2 MB'
+                solicitacaoPendente
+                  ? 'Arquivo enviado pelo aplicativo'
+                  : anexoSalvoAtivo
+                    ? 'Remova o documento atual para selecionar um novo arquivo.'
+                    : 'PDF, JPG ou PNG de até 2 MB'
               "
               @rejected="arquivoRejeitado"
             >
               <template #prepend><q-icon name="upload_file" /></template>
-              <template v-if="anexoSalvoAtivo" #append
+              <template v-if="anexoSalvoAtivo && !solicitacaoPendente" #append
                 ><q-btn
                   flat
                   dense
@@ -292,7 +294,14 @@
           <AcoesAnaliseDocumento
             :documento="documento"
             v-model:loading="analisando"
-            :disable="ocupado || lendo || removido || !!arquivo || editados.size > 0"
+            :disable="
+              ocupado ||
+              lendo ||
+              removido ||
+              !!arquivo ||
+              (!solicitacaoPendente && (editados.size > 0 || dadosAlterados))
+            "
+            :before-approve="solicitacaoPendente ? prepararAprovacao : undefined"
             @updated="onAnaliseUpdated"
           />
           <q-space />
@@ -301,11 +310,11 @@
             color="primary"
             type="submit"
             label="Enviar"
-            v-if="pode('documentos.analisar')"
+            v-if="pode('documentos.analisar') && !solicitacaoPendente"
             :loading="enviando"
             :disable="
               ocupado ||
-              !arquivo ||
+              (!arquivo && !solicitacaoPendente) ||
               !motoristaId ||
               lendo ||
               conferenciaInvalida ||
@@ -342,6 +351,9 @@ const novoVeiculo = ref(false)
 const documento = computed(() =>
   novoVeiculo.value ? null : documentoNavegado.value || props.documento,
 )
+const solicitacaoPendente = computed(
+  () => !!documento.value?.solicitacao_veiculo && !documento.value?.veiculo_id,
+)
 const formulario = ref(null)
 const dadosOriginais = ref({})
 const dados = ref({}),
@@ -357,7 +369,7 @@ const dados = ref({}),
 const analisando = ref(false)
 const ocupado = computed(() => enviando.value || analisando.value)
 const documentosCrlv = computed(() =>
-  props.veiculos
+  (solicitacaoPendente.value ? [] : props.veiculos)
     .map((veiculo) => {
       const atual =
         String(props.documento?.veiculo_id) === String(veiculo.id)
@@ -425,14 +437,11 @@ const nomeSalvo = computed(() => {
 const foto = computed(() => !!previewUrl.value && !pdf.value)
 const verificacoes = computed(() => conferirDadosCrlv(dados.value))
 const conferencia = computed(() => compararCrlv(veiculo.value, dados.value))
-// Conferência sem bloqueio temporariamente, para testes com documentos divergentes.
-const conferenciaInvalida = computed(() => false)
-/* Reativar a validação após os testes:
 const conferenciaInvalida = computed(
-  () => !!veiculo.value &&
+  () =>
+    !!veiculo.value &&
     conferencia.value.some((item) => ['divergente', 'nao_informado'].includes(item.status)),
 )
-*/
 const textosConferencia = {
   confere: 'Confere',
   divergente: 'Divergente',
@@ -505,6 +514,13 @@ function limparUrl() {
   if (urlLocal.value) URL.revokeObjectURL(urlLocal.value)
   urlLocal.value = ''
 }
+const dadosAlterados = computed(() =>
+  campos.some(
+    (campo) =>
+      String(dados.value[campo.name] ?? '') !== String(dadosOriginais.value[campo.name] ?? ''),
+  ),
+)
+
 function iniciar() {
   novoVeiculo.value = false
   documentoNavegado.value = null
@@ -535,7 +551,13 @@ function carregarDocumento() {
     ]),
   )
   dadosOriginais.value = { ...dados.value }
-  nextTick(() => formulario.value?.resetValidation())
+  const documentoId = documento.value?.id
+  nextTick(() => {
+    formulario.value?.resetValidation()
+    if (model.value && solicitacaoPendente.value && documentoId === documento.value?.id) {
+      void lerArquivoSolicitacao()
+    }
+  })
 }
 function navegarCrlv(id) {
   if (ocupado.value || lendo.value || String(id) === String(veiculoId.value)) return
@@ -590,18 +612,7 @@ function restaurarExtraidos() {
   }
   extraidos.clear()
 }
-watch(arquivo, async (file) => {
-  cancelar()
-  limparUrl()
-  restaurarExtraidos()
-  resultado.value = null
-  errors.value = {}
-  if (!file) return
-  removido.value = true
-  urlLocal.value = URL.createObjectURL(file)
-  const current = new AbortController()
-  controller = current
-  lendo.value = true
+async function analisarArquivo(file, current) {
   const anteriores = { ...dados.value }
   try {
     const leitura = await extrairCrlv(file, current.signal, (message) => {
@@ -652,6 +663,21 @@ watch(arquivo, async (file) => {
       lendo.value = false
     }
   }
+}
+watch(arquivo, async (file) => {
+  cancelar()
+  limparUrl()
+  restaurarExtraidos()
+  resultado.value = null
+  errors.value = {}
+  if (!file) return
+  removido.value = true
+  urlLocal.value = URL.createObjectURL(file)
+  const current = new AbortController()
+  controller = current
+  lendo.value = true
+  progresso.value = 'Lendo o CRLV…'
+  await analisarArquivo(file, current)
 })
 onUnmounted(fechar)
 function arquivoRejeitado(rejections) {
@@ -665,6 +691,7 @@ function arquivoRejeitado(rejections) {
   })
 }
 async function enviar() {
+  if (solicitacaoPendente.value) return
   if (
     !arquivo.value ||
     !props.motoristaId ||
@@ -700,6 +727,73 @@ async function enviar() {
   } finally {
     enviando.value = false
   }
+}
+
+async function lerArquivoSolicitacao() {
+  if (!solicitacaoPendente.value || !documento.value?.url || lendo.value || ocupado.value) return
+  const registro = documento.value
+  const current = new AbortController()
+  controller = current
+  lendo.value = true
+  progresso.value = 'Carregando o CRLV…'
+  try {
+    const response = await api.put(
+      `/motorista-documentos/${registro.id}`,
+      { leitura_automatica: true },
+      { signal: current.signal, timeout: 120000 },
+    )
+    if (
+      controller !== current ||
+      current.signal.aborted ||
+      !model.value ||
+      documento.value?.id !== registro.id
+    )
+      return
+    const salvos = response.data.data.informacoes_complementares || {}
+    for (const campo of campos) {
+      if (Object.hasOwn(salvos, campo.name)) dados.value[campo.name] = salvos[campo.name] ?? ''
+    }
+    dadosOriginais.value = { ...dados.value }
+    editados.clear()
+  } catch {
+    if (controller === current && !current.signal.aborted) {
+      resultado.value = {
+        reconhecidos: 0,
+        preenchidos: 0,
+        mensagem:
+          'Não foi possível carregar os dados do CRLV. Confira a prévia e complete os campos antes de aprovar.',
+      }
+    }
+  } finally {
+    if (controller === current) {
+      controller = null
+      lendo.value = false
+    }
+  }
+}
+
+async function prepararAprovacao() {
+  if (lendo.value || !(await formulario.value?.validate())) return false
+  errors.value = {}
+  // A aprovação usa o que está visível no formulário; correções são salvas antes dela.
+  if (dadosAlterados.value) {
+    try {
+      await api.put(`/motorista-documentos/${documento.value.id}`, {
+        informacoes_complementares: dados.value,
+      })
+      dadosOriginais.value = { ...dados.value }
+      editados.clear()
+    } catch (error) {
+      errors.value = error.response?.data?.errors || {}
+      $q.notify({
+        type: 'negative',
+        message:
+          error.response?.data?.message || 'Não foi possível salvar os dados para aprovação.',
+      })
+      return false
+    }
+  }
+  return true
 }
 
 function onAnaliseUpdated() {

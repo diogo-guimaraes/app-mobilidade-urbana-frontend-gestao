@@ -78,6 +78,11 @@
                     <q-item-label v-if="props.row.legado" caption
                       >Documento anterior sem veículo identificado</q-item-label
                     >
+                    <q-item-label v-if="props.row.nova_solicitacao" caption class="text-primary">
+                      Novo veículo enviado pelo app ·
+                      {{ props.row.solicitacao_veiculo?.categoria === 'moto' ? 'Moto' : 'Carro' }}
+                      · {{ props.row.solicitacao_veiculo?.formato === 'digital' ? 'PDF' : 'Foto' }}
+                    </q-item-label>
                     <q-item-label v-if="props.row.sem_veiculo" caption
                       >Envie o CRLV para cadastrar o veículo.</q-item-label
                     >
@@ -86,6 +91,7 @@
                         v-if="
                           props.row.tipo_documento === 'crlv' &&
                           !props.row.legado &&
+                          !props.row.nova_solicitacao &&
                           badgesCrlv.length
                         "
                         class="row q-gutter-xs"
