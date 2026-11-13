@@ -7,7 +7,7 @@ A gestão cadastra os anúncios em `/publicidades` (Central de Publicidade). O a
 **Criar anúncio** pede três campos:
 
 - **Título**: de 3 a 120 caracteres. É também o texto lido pelo leitor de tela no app.
-- **Cidade**: escolhida entre as cidades cadastradas. Sem ela, o banner não aparece para ninguém.
+- **Cidade**: escolhida entre os municípios do IBGE, buscando pelo nome no próprio campo. Sem ela, o banner não aparece para ninguém.
 - **Imagem**: JPG, PNG ou WEBP de até 5 MB (`PUBLICIDADE_TAMANHO_MAXIMO_KB`).
 
 O app exibe a imagem na proporção 2,4 : 1 (por exemplo, 1200 × 500) e corta o que passar dela. O nome do arquivo é gerado pelo servidor, e a imagem fica no disco `publicidade.disco`.

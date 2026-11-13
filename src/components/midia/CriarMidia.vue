@@ -53,12 +53,15 @@
                   <q-select
                     class="full-width"
                     v-model="banner.cidade_id"
-                    :options="cidades"
+                    :options="cidadesFiltradas"
                     label="Cidade"
                     outlined
                     dense
                     emit-value
                     map-options
+                    use-input
+                    input-debounce="0"
+                    @filter="filtrarCidades"
                     :loading="carregandoCidades"
                     :disable="enviando"
                     :rules="[(val) => !!val || 'Selecione a cidade']"
@@ -137,7 +140,24 @@ const TAMANHO_MAXIMO = 5 * 1024 * 1024
 const file = ref(null)
 const enviando = ref(false)
 const cidades = ref([])
+// são todos os municípios do IBGE: a lista só mostra os que combinam com o que foi digitado
+const cidadesFiltradas = ref([])
 const carregandoCidades = ref(false)
+
+const semAcento = (texto) =>
+  texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+
+function filtrarCidades(busca, update) {
+  const termo = semAcento(busca.trim())
+  update(() => {
+    cidadesFiltradas.value = termo
+      ? cidades.value.filter((cidade) => semAcento(cidade.label).includes(termo))
+      : cidades.value
+  })
+}
 
 const banner = reactive({
   titulo: '',

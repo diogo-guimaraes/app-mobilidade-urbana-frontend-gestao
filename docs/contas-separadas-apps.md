@@ -8,7 +8,7 @@ Até 13/10 o projeto já teve contas separadas, e o commit `0b2e1dc` juntou tudo
 
 | Tabela | Colunas da conta (antes dos timestamps) |
 |---|---|
-| `motoristas` | `name`, `telefone`, `email`, `email_verified_at`, `password`, `remember_token`, além de `cpf`, `data_nascimento` e `foto` que já existiam |
+| `motoristas` | `name`, `telefone`, `email`, `email_verified_at`, `password`, `remember_token`, além de `cpf`, `data_nascimento` e `foto` que já existiam, e `cidade_id` (a cidade onde roda) |
 | `passageiros` | `name`, `telefone`, `cpf`, `data_nascimento`, `email`, `email_verified_at`, `password`, `remember_token`, `foto` |
 
 - Telefone, e-mail e CPF são únicos **dentro de cada tabela**. A mesma pessoa pode ter cadastro de motorista e de passageiro, inclusive com o mesmo e-mail, e cada um tem a sua senha.
@@ -33,11 +33,45 @@ Até 13/10 o projeto já teve contas separadas, e o commit `0b2e1dc` juntou tudo
 
 O resto da API dos apps aceita os dois tokens. Cada rota pega o perfil que precisa; com o token do outro app, responde como antes respondia para quem não tinha aquele perfil.
 
-Cadastro de veículos, tarifas, produtos e categorias, publicidade e cidades, motoristas e análise de documentos ficam **só** em `/api/gestao/...`, com token de gestor. Antes essas rotas também estavam no grupo dos apps e qualquer motorista ou passageiro logado as alcançava. Por exemplo, dava para listar todos os motoristas com e-mail, telefone e CPF. Nenhum app usava essas rotas. Dos apps, só `GET /api/banners` continua, para mostrar os banners da cidade.
+Cadastro de veículos, tarifas, produtos e categorias, publicidade e cidades, motoristas e análise de documentos ficam **só** em `/api/gestao/...`, com token de gestor. Antes essas rotas também estavam no grupo dos apps e qualquer motorista ou passageiro logado as alcançava. Por exemplo, dava para listar todos os motoristas com e-mail, telefone e CPF. Nenhum app usava essas rotas. Dos apps, só `GET /api/banners` continua, para mostrar os banners da cidade, e `GET /api/motorista/cidades`, que só lista as cidades para o motorista escolher a sua.
 
 O `id` do usuário nas respostas é o **id do perfil**. `/api/usuario-logado` e as rotas de foto continuam com o mesmo caminho.
 
 Perfil arquivado, bloqueado ou inativo não entra (403). Depois da mudança, quem estava logado precisa entrar de novo nos apps.
+
+## Perfil no app do motorista
+
+Na tela **Perfil** (menu, foto do motorista, Configurações) o motorista troca a foto, o telefone, o e-mail e a cidade.
+
+| Rota | O que faz |
+|---|---|
+| `PUT /api/usuario-alterar-foto-perfil/{id}` | Foto da galeria ou da câmera (`image`, até 5 MB) |
+| `POST /api/usuario-alterar-contato/codigo` | `campo` (`telefone` ou `email`) e `valor`: confere se está livre e manda um código de 4 dígitos |
+| `PUT /api/usuario-alterar-contato` | `campo`, `valor` e `codigo`: troca só com o código certo |
+| `GET /api/motorista/cidades` | Os 5.570 municípios (`id`, `nome`, `uf`), cerca de 250 KB. O app baixa uma vez por sessão |
+| `PUT /api/motorista/me/cidade` | `cidade_id`, uma das cidades da lista |
+
+- A troca de contato vale para os dois apps, mas por enquanto só o app do motorista a usa.
+- O telefone é gravado só com os números, como no cadastro, e o e-mail em minúsculas.
+- O telefone e o e-mail têm que estar livres naquele app. O código vale 30 minutos e só para o valor para o qual foi pedido.
+- O SMS e o e-mail ainda são simulados, como no login: em desenvolvimento o código volta na resposta, e o app mostra **Preencher código**.
+- Na tela, o motorista busca a cidade pelo nome, sem acento nem maiúscula, a partir da 2ª letra. Cada resultado mostra a UF. O estado vem da cidade escolhida (`cidades.uf_id`). Sem busca, aparece só a cidade atual.
+- A cidade escolhida volta em `cidade` (`id`, `nome`, `uf`, `uf_id`) no login e em `/api/usuario-logado`. No passageiro, `cidade` vem sempre `null`.
+
+## Estados e cidades
+
+A tabela `cidades` tem todos os 5.570 municípios do IBGE, e a tabela `estados`, os 27 estados. Os dois são carregados pela migration `2026_11_16_110000_create_estados_e_carrega_cidades`, a partir de `database/data/municipios.php`.
+
+- **`estados`:** `id` (o código do estado no IBGE, 11 = Rondônia), `nome` e `sigla`.
+- **`cidades`:** ganhou `uf_id`, que aponta para `estados`. O `ibge` passou a ser único.
+- **Cidades que já existiam:** mantiveram o `id`, porque tarifas, banners e corridas apontam para elas.
+- **Coluna `uf`:** a sigla continua em `cidades.uf`. Ao criar ou editar uma cidade pela sigla, o `uf_id` é preenchido sozinho.
+- **Seeder:** as cidades saíram do `DemonstracaoCompletaSeeder`.
+- **Origem dos dados:** o dump `brasil.sql`, tabelas `municipio` e `uf`.
+  - Nele, as palavras que começam com "d" estavam em minúscula ("São domingos", "dom Eliseu"). O mesmo valia para "D'oeste", "Pio Xii" e " E ".
+  - 187 nomes foram corrigidos.
+  - "da", "de", "do", "das", "dos" e "del" continuam em minúscula ("São João del Rei").
+- **Rollback:** desfazer a migration apaga `estados` e `uf_id`, mas mantém as cidades, porque outras tabelas podem apontar para elas.
 
 ## O que passou a apontar para o perfil
 
