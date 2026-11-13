@@ -1,18 +1,17 @@
 const campo = (chave, label, tipo = 'texto') => ({ chave, label, tipo })
-const pessoais = (prefixo = '') => [
-  campo(`${prefixo}name`, 'Nome completo'),
-  campo(`${prefixo}cpf`, 'CPF', 'cpf'),
-  campo(`${prefixo}data_nascimento`, 'Data de nascimento', 'data'),
+const pessoais = [
+  campo('name', 'Nome completo'),
+  campo('cpf', 'CPF', 'cpf'),
+  campo('data_nascimento', 'Data de nascimento', 'data'),
 ]
 const contatos = [campo('email', 'E-mail'), campo('telefone', 'Telefone', 'telefone')]
 export const configuracoesDetalhes = {
-  usuario: { titulo: 'Dados do usuário', endpoint: 'users', campos: pessoais() },
   motorista: {
     titulo: 'Dados do motorista',
     endpoint: 'motoristas',
     imagem: 'foto',
     campos: [
-      ...pessoais('user.'),
+      ...pessoais,
       ...contatos,
       campo('status', 'Status', 'status'),
       campo('numero_registro', 'Número de registro da CNH'),
@@ -29,7 +28,7 @@ export const configuracoesDetalhes = {
     endpoint: 'passageiros',
     imagem: 'foto',
     campos: [
-      ...pessoais('user.'),
+      ...pessoais,
       ...contatos,
       campo('status', 'Status', 'status'),
       campo('media_avaliacao', 'Média de avaliação'),
@@ -39,14 +38,14 @@ export const configuracoesDetalhes = {
     titulo: 'Dados do gestor',
     endpoint: 'gestores',
     imagem: 'foto',
-    campos: [...pessoais(), ...contatos],
+    campos: [...pessoais, ...contatos],
   },
   corrida: {
     titulo: 'Dados da corrida',
     campos: [
       campo('codigo_corrida', 'Código da corrida'),
-      campo('motorista.user.name', 'Motorista'),
-      campo('passageiro.user.name', 'Passageiro'),
+      campo('motorista.name', 'Motorista'),
+      campo('passageiro.name', 'Passageiro'),
       campo('convidado_nome', 'Nome do convidado'),
       campo('convidado_telefone', 'Telefone do convidado', 'telefone'),
       campo('veiculo.placa', 'Placa do veículo'),

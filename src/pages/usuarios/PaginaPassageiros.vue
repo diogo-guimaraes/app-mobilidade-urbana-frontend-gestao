@@ -8,13 +8,11 @@
       :registro="registroVisualizado"
       @updated="onRequest"
     />
-    <DocumentosUsuario :usuario="usuario" v-model="dialog.documentos" />
-    <MotoristaVeiculos :usuario="usuario" v-model="dialog.veiculos" />
-    <ExcluirUsuario
-      :acao="openPress"
-      :data="usuarioSelecionado"
-      @deleted="onRequest"
-      v-model="dialog.excluir"
+    <EditarUsuario
+      v-model="dialog.editar"
+      :usuario-id="usuarioId"
+      tipoUsuario="passageiro"
+      @updated="onRequest"
     />
     <q-card>
       <q-table
@@ -81,7 +79,7 @@
                     <img :src="props.row.foto" />
                   </q-avatar>
                   <q-avatar v-else color="primary" text-color="white">
-                    {{ props.row.user?.name?.charAt(0) }}
+                    {{ props.row.name?.charAt(0) }}
                   </q-avatar>
                   <q-badge
                     v-if="props.row.status"
@@ -93,10 +91,10 @@
                 </q-item-section>
 
                 <q-item-section>
-                  <q-item-label class="text-bold"> {{ props.row.user.name }}</q-item-label>
+                  <q-item-label class="text-bold"> {{ props.row.name }}</q-item-label>
                   <q-item-label class="estilo-coluna">
                     <div v-if="props.row.email">{{ props.row.email }}</div>
-                    <div>CPF: {{ props.row.user.cpf }}</div>
+                    <div>CPF: {{ props.row.cpf }}</div>
                     <div v-if="props.row.telefone">TEL: {{ props.row.telefone }}</div>
                   </q-item-label>
                 </q-item-section>
@@ -117,14 +115,15 @@
               </q-btn>
 
               <q-btn
-                v-if="pode('usuarios.gerenciar')"
-                @click="openExcluir(props.row)"
+                v-if="pode('usuarios.gerenciar') && !props.row.deleted_at"
+                @click="openEditar(props.row)"
                 dense
                 flat
-                icon="delete"
+                icon="edit"
+                aria-label="Editar passageiro"
               >
                 <q-tooltip transition-show="flip-right" transition-hide="flip-left">
-                  arquivar
+                  Editar
                 </q-tooltip>
               </q-btn>
             </q-td>
@@ -142,9 +141,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
 import CriarUsuario from 'src/components/usuarios/CriarUsuario.vue'
 import MostrarUsuario from 'src/components/usuarios/MostrarUsuario.vue'
-import ExcluirUsuario from 'src/components/usuarios/ExcluirUsuario.vue'
-import DocumentosUsuario from 'src/components/usuarios/DocumentosUsuario.vue'
-import MotoristaVeiculos from 'src/components/motorista/MotoristaVeiculos.vue'
+import EditarUsuario from 'src/components/usuarios/EditarUsuario.vue'
 
 // STATES
 const usuarios = ref({
@@ -153,8 +150,6 @@ const usuarios = ref({
 })
 
 const dominio = ref('passageiros')
-const usuarioSelecionado = ref(null)
-const openPress = ref(null)
 const loading = ref(false)
 const search = ref('')
 const grid = ref(false)
@@ -163,13 +158,10 @@ const dialog = reactive({
   editar: false,
   cadastrar: false,
   visualizar: false,
-  excluir: false,
-  veiculos: false,
 })
 
 const usuarioId = ref(null)
 const registroVisualizado = ref(null)
-const usuario = ref({})
 
 const pagination = ref({
   page: 1,
@@ -205,10 +197,9 @@ const openVisualizar = (registro) => {
   dialog.visualizar = true
 }
 
-const openExcluir = (usuario) => {
-  usuarioSelecionado.value = [usuario]
-  openPress.value = 'arquivar'
-  dialog.excluir = true
+const openEditar = (registro) => {
+  usuarioId.value = registro.id
+  dialog.editar = true
 }
 
 const buscarDados = async (props) => {

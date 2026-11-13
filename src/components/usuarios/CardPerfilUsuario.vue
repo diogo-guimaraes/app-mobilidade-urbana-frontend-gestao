@@ -2,7 +2,7 @@
   <q-list :bordered="bordered">
     <q-item>
       <q-item-section top avatar>
-        <q-avatar v-if="props.usuario?.foto_thumbnail">
+        <q-avatar v-if="props.usuario?.foto">
           <img :src="props.usuario?.foto" />
         </q-avatar>
         <q-avatar v-else color="primary" text-color="white">

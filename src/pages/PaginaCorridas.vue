@@ -1,12 +1,6 @@
 <template>
   <q-page class="q-pa-md">
     <VisualizarRegistro v-model="dialog.mostrar" tipo="corrida" :registro="registroVisualizado" />
-    <ExcluirRegistro
-      :acao="openPress"
-      :data="usuarioSelecionado"
-      @deleted="onRequest"
-      v-model="dialog.excluir"
-    />
     <q-card>
       <q-table
         :rows="data"
@@ -43,13 +37,13 @@
             <q-td key="corrida">
               <q-item>
                 <q-item-section>
-                  <q-item-label v-if="props.row.motorista?.user?.name">
+                  <q-item-label v-if="props.row.motorista?.name">
                     <span class="text-bold">Motorista:</span>
-                    {{ props.row.motorista.user.name }}</q-item-label
+                    {{ props.row.motorista.name }}</q-item-label
                   >
-                  <q-item-label v-if="props.row.passageiro?.user?.name">
+                  <q-item-label v-if="props.row.passageiro?.name">
                     <span class="text-bold"> Passageiro: </span>
-                    {{ props.row.passageiro.user.name }}
+                    {{ props.row.passageiro.name }}
                   </q-item-label>
                   <q-item-label v-if="props.row.veiculo?.placa">
                     <span class="text-bold"> Veículo: </span>
@@ -113,7 +107,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
 import VisualizarRegistro from 'src/components/VisualizarRegistro.vue'
-import ExcluirRegistro from 'src/components/ExcluirRegistro.vue'
 import { camposDetalhes } from 'src/utils/detalhesRegistro'
 import { formatarStatus } from 'src/utils/status'
 
@@ -121,8 +114,6 @@ import { formatarStatus } from 'src/utils/status'
 const data = ref([])
 
 // const dominio = ref('users')
-const usuarioSelecionado = ref(null)
-const openPress = ref(null)
 const loading = ref(false)
 const search = ref('')
 const grid = ref(false)
@@ -131,7 +122,6 @@ const dialog = reactive({
   editar: false,
   criar: false,
   mostrar: false,
-  excluir: false,
 })
 
 const registroVisualizado = ref(null)

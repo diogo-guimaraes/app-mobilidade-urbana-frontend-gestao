@@ -305,9 +305,7 @@
         <q-card-section v-else-if="corrida">
           <div class="text-h6">{{ corrida.codigo_corrida }}</div>
           <p>{{ corrida.produto?.nome }} · {{ corrida.status_corrida }}</p>
-          <p>
-            Motorista: {{ corrida.motorista?.user?.name || operacao.motorista || 'Não informado' }}
-          </p>
+          <p>Motorista: {{ corrida.motorista?.name || operacao.motorista || 'Não informado' }}</p>
           <p>Pagamento: {{ corrida.metodo_pagamento }} · {{ corrida.status_pagamento }}</p>
           <q-list separator
             ><q-item v-for="ponto in corrida.corrida_destinos" :key="ponto.id"

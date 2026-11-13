@@ -59,6 +59,39 @@ Todas usam JWT de Gestor e financeiro.consultar. As respostas não incluem o cha
 
 O resumo não retorna a listagem detalhada. Ela é carregada somente ao escolher uma ação. O histórico de solicitações traz passageiro, trajeto, pagamento e composição, em ordem de conclusão decrescente. As consultas antigas são canceladas ao trocar de motorista ou período.
 
+## No app do motorista
+
+### Seus ganhos
+
+A tela **Seus ganhos** mostra ao próprio motorista os mesmos números desta página, com o mesmo cálculo. Ela abre pelo card amarelo **Ganhos do dia** da Central de ganhos, pelo **Mais** do painel de ganhos e pelos itens do painel.
+
+- Abas **Tudo**, **Corridas** e **Entregas** e períodos **Diários**, **Semanais** e **Mensais**. Não há período anual no app.
+- Total com a divisão entre ganhos pagos em dinheiro e no app, e gráfico de segunda a domingo. No diário, tocar numa barra escolhe o dia.
+- O seletor de semana mostra o total de cada semana e navega mês a mês. O de mês lista os últimos 12 meses.
+- **Detalhamento de ganhos** por categoria. Cada linha, o **Histórico de solicitações** e o **Demonstrativo de ganhos** abrem a lista do período.
+- **Painel de ganhos** com ganhos por km, por solicitação e quantidade de solicitações.
+
+As rotas usam o JWT do app. O motorista vem do token, então não é possível consultar outro motorista.
+
+| Método | Rota                              | Contrato                                                                                                     |
+| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| GET    | /api/motorista/me/ganhos/resumo   | Recebe data, periodo (diario, semanal, mensal) e tipo_servico. Retorna o mesmo conteúdo do resumo da gestão. |
+| GET    | /api/motorista/me/ganhos/detalhes | Mesmos filtros, mais visao, page e per_page.                                                                 |
+
+Quem não tem cadastro de motorista recebe 403, e periodo=anual recebe 422.
+
+### Painel de ganhos da home
+
+O botão preto do topo da home (olho e ganho do dia) abre o **Painel**. Os valores saem do histórico de corridas do motorista. Sem corrida, cada valor mostra zero.
+
+- **Valor da última corrida** abre o Histórico de corridas.
+- Os itens da semana abrem **Seus ganhos** em Semanais, e os de hoje em Diários.
+- **Saldo** abre a Central de ganhos, e **Mais** abre Seus ganhos.
+- **Editar** abre a tela **Editar Painel**. **Valor da última corrida** e **Ganhos desta semana** são fixos; os outros podem ser removidos ou adicionados, até 6 itens no total. **Confirmar** salva a escolha, e o painel mostra os itens em filas de 3.
+- **Meta de ganhos escolhida** compara os ganhos da semana com a meta semanal, que o motorista define em reais inteiros.
+
+A escolha do painel e a meta ficam salvas no aparelho, separadas por conta. Em outro celular o motorista escolhe de novo. Não há tabela nova no backend. Os números do painel contam só as últimas 50 corridas do histórico.
+
 ## Atualização e teste
 
 Execute no terminal do backend dentro do container:

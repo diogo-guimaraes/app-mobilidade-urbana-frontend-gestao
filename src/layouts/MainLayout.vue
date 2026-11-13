@@ -186,7 +186,6 @@ export default {
 
       links1: computed(() =>
         [
-          { icon: 'groups_2', text: 'Usuários', to: '/usuarios', permissao: 'usuarios.consultar' },
           {
             icon: 'manage_accounts',
             text: 'Gestores',

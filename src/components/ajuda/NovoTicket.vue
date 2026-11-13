@@ -26,6 +26,7 @@
             :options="usuarios"
             option-label="name"
             label="Solicitante"
+            :hint="solicitante ? `Cadastro de ${nomeTipo(solicitante.tipo).toLowerCase()}` : ''"
             :loading="buscando"
             :rules="[(v) => !!v || 'Selecione o solicitante']"
             @filter="buscar"
@@ -38,12 +39,7 @@
                 ><q-item-section
                   ><q-item-label>{{ scope.opt.name }}</q-item-label
                   ><q-item-label caption
-                    >{{ scope.opt.cpf }} ·
-                    {{
-                      scope.opt.perfis
-                        .map((p) => (p === 'motorista' ? 'Motorista' : 'Passageiro'))
-                        .join(' / ')
-                    }}</q-item-label
+                    >{{ scope.opt.cpf }} · {{ nomeTipo(scope.opt.tipo) }}</q-item-label
                   ></q-item-section
                 ></q-item
               ></template
@@ -56,16 +52,6 @@
               ></template
             >
           </q-select>
-          <q-select
-            v-model="tipo"
-            outlined
-            emit-value
-            map-options
-            :options="perfis"
-            label="Perfil do atendimento"
-            :disable="!solicitante"
-            :rules="[(v) => !!v || 'Selecione o perfil']"
-          />
           <q-select
             v-model="motivo"
             outlined
@@ -80,7 +66,7 @@
             outlined
             label="ID da corrida (opcional)"
             inputmode="numeric"
-            hint="A corrida deve pertencer ao solicitante e ao perfil escolhido."
+            hint="A corrida deve pertencer ao solicitante escolhido."
             :rules="[(v) => !v || /^[1-9]\d*$/.test(v) || 'Informe um ID válido']"
           />
           <q-input
@@ -111,14 +97,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { api } from 'boot/axios'
 import { motivosTickets, erroTicket } from 'src/utils/tickets'
 
 const aberto = defineModel({ type: Boolean, default: false })
 const emit = defineEmits(['criado'])
+// cada solicitante é um cadastro de motorista ou de passageiro (a mesma pessoa pode ter os dois)
 const solicitante = ref(null)
-const tipo = ref(null)
 const motivo = ref(null)
 const corrida = ref('')
 const descricao = ref('')
@@ -128,20 +114,13 @@ const salvando = ref(false)
 const erro = ref('')
 let searchController = null
 let searchVersion = 0
-const perfis = computed(() =>
-  (solicitante.value?.perfis || []).map((value) => ({
-    value,
-    label: value === 'motorista' ? 'Motorista' : 'Passageiro',
-  })),
-)
-function selecionar(value) {
-  tipo.value = value?.perfis?.length === 1 ? value.perfis[0] : null
+const nomeTipo = (tipo) => (tipo === 'motorista' ? 'Motorista' : 'Passageiro')
+function selecionar() {
   corrida.value = ''
 }
 watch(aberto, (value) => {
   if (!value) return
   solicitante.value = null
-  tipo.value = null
   motivo.value = null
   corrida.value = ''
   descricao.value = ''
@@ -176,8 +155,8 @@ async function salvar() {
   erro.value = ''
   try {
     const { data } = await api.post('/ajuda/tickets', {
-      user_id: solicitante.value.id,
-      solicitante_tipo: tipo.value,
+      solicitante_tipo: solicitante.value.tipo,
+      solicitante_id: solicitante.value.id,
       motivo: motivo.value,
       descricao: descricao.value.trim(),
       corrida_id: corrida.value ? Number(corrida.value) : null,

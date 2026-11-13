@@ -17,8 +17,8 @@ const props = defineProps({
   usuarioId: [String, Number],
   tipoUsuario: {
     type: String,
-    default: 'usuario',
-    validator: (valor) => ['usuario', 'motorista', 'passageiro', 'gestor'].includes(valor),
+    required: true,
+    validator: (valor) => ['motorista', 'passageiro', 'gestor'].includes(valor),
   },
   registro: Object,
 })

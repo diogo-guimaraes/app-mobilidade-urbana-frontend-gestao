@@ -68,7 +68,7 @@
             <q-checkbox
               v-model="props.selected"
               :disable="!!props.row.vinculado || lotado || loading || salvando"
-              :aria-label="`Selecionar ${props.row.user.name}`"
+              :aria-label="`Selecionar ${props.row.name}`"
             />
           </template>
           <template #body-cell-usuario="props">
@@ -77,12 +77,12 @@
                 <q-item-section avatar>
                   <q-avatar v-if="props.row.foto"><img :src="props.row.foto" /></q-avatar>
                   <q-avatar v-else color="primary" text-color="white">
-                    {{ props.row.user.name?.charAt(0) }}
+                    {{ props.row.name?.charAt(0) }}
                   </q-avatar>
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label class="text-weight-bold">{{ props.row.user.name }}</q-item-label>
-                  <q-item-label caption>CPF: {{ formatarCpf(props.row.user.cpf) }}</q-item-label>
+                  <q-item-label class="text-weight-bold">{{ props.row.name }}</q-item-label>
+                  <q-item-label caption>CPF: {{ formatarCpf(props.row.cpf) }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-td>

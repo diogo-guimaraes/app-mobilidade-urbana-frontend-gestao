@@ -1,283 +1,242 @@
 <template>
-  <q-dialog v-model="model" @before-show="beforeShowDialog">
-    <q-card style="width: 700px; max-width: 80vw">
-      <!-- HEADER -->
+  <q-dialog v-model="model" :persistent="salvando || salvandoFoto" @before-show="carregar">
+    <q-card style="width: 700px; max-width: 95vw">
       <q-toolbar>
-        <q-avatar square rounded icon="person" color="primary" text-color="white" />
-
-        <q-toolbar-title>
-          <span class="text-weight-bold">Editar usuário</span>
-        </q-toolbar-title>
-
-        <q-btn flat round dense icon="save" v-if="!loadingDialog" @click="atualizarUsuario" />
-
-        <q-btn flat round dense icon="close" v-close-popup />
+        <q-avatar rounded icon="edit" color="primary" text-color="white" />
+        <q-toolbar-title class="text-weight-bold">Editar {{ tipoUsuario }}</q-toolbar-title>
+        <q-btn
+          flat
+          round
+          dense
+          icon="close"
+          aria-label="Fechar edição"
+          :disable="salvando || salvandoFoto"
+          v-close-popup
+        />
       </q-toolbar>
-
       <q-separator />
 
-      <!-- CONTENT -->
-      <div class="row" v-if="!loadingDialog">
-        <!-- IMAGEM -->
-        <div class="col-12 q-px-md q-py-sm">
-          <q-card class="full-width" flat bordered :class="$q.dark.isActive ? 'dark_mode' : ''">
-            <q-card-section class="flex justify-center">
-              <!-- COM IMAGEM -->
-              <q-avatar size="12rem" v-if="user?.foto">
-                <q-img ratio="1" :src="user.foto">
-                  <div class="flex caption absolute-full text-h5 flex-center">
-                    <span class="btn btn-success fileinput-button">
-                      <q-icon name="photo_camera" color="white" />
-                      <br />Alterar<br />imagem
-                      <input type="file" @change="imageSelected" />
-                    </span>
-                  </div>
+      <q-card-section v-if="carregando" class="column items-center q-pa-lg" role="status">
+        <q-spinner color="primary" size="36px" />
+        <span class="q-mt-sm">Carregando informações…</span>
+      </q-card-section>
+      <q-card-section v-else-if="falhaCarregamento">
+        <q-banner rounded class="bg-red-1 text-negative">
+          {{ falhaCarregamento }}
+          <template #action><q-btn flat label="Tentar novamente" @click="carregar" /></template>
+        </q-banner>
+      </q-card-section>
 
-                  <div
-                    class="flex flex-center absolute-full"
-                    style="backdrop-filter: blur(2px)"
-                    v-if="image.submit"
-                  >
-                    <q-spinner color="white" />
-                  </div>
-                </q-img>
-              </q-avatar>
-
-              <!-- SEM IMAGEM -->
-              <q-avatar v-else color="primary" size="12rem">
-                <q-spinner color="white" v-if="image.submit" />
-
-                <div class="flex absolute-full text-h5 flex-center" v-else>
-                  <span class="btn btn-success fileinput-button">
-                    <q-icon name="add_photo_alternate" size="40px" color="white" />
-                    <br />Adicionar<br />imagem
-                    <input type="file" @change="imageSelected" />
-                  </span>
-                </div>
-              </q-avatar>
-            </q-card-section>
-
-            <div class="flex justify-center">
-              <q-btn
-                flat
-                icon="close"
-                color="primary"
-                label="REMOVER IMAGEM"
-                @click="removeProfileImage"
-                v-if="user.foto"
-              />
-            </div>
-          </q-card>
-        </div>
-
-        <div class="col-md-6 col-12 q-px-md q-py-sm">
-          <q-input dense outlined v-model="user.name" label="Nome *" />
-        </div>
-
-        <div class="col-md-6 col-12 q-px-md q-py-sm">
-          <q-input
-            dense
-            outlined
-            v-model="user.telefone"
-            label="Telefone *"
-            mask="(##) ##### - ####"
+      <q-form v-else @submit="salvar">
+        <q-card-section style="max-height: 70vh; overflow-y: auto">
+          <FotoPerfil
+            :src="foto || ''"
+            :loading="salvandoFoto"
+            :disable="salvando"
+            @selected="salvarFoto"
+            @remove="salvarFoto(null)"
           />
-        </div>
-
-        <div class="col-md-6 col-12 q-px-md q-py-sm">
-          <q-input dense outlined v-model="user.cpf" label="CPF *" mask="###.###.###-##" />
-        </div>
-
-        <!-- DATA NASCIMENTO -->
-        <div class="col-md-6 col-12 q-px-md q-py-sm">
-          <q-input
-            dense
-            outlined
-            v-model="user.data_nascimento"
-            label="Data de Nascimento"
-            mask="##/##/####"
+          <div class="row q-col-gutter-md">
+            <q-input
+              v-model="formulario.name"
+              class="col-12"
+              dense
+              outlined
+              label="Nome completo *"
+              maxlength="255"
+              :disable="salvando"
+              :rules="[(val) => val?.trim().length >= 3 || 'Informe o nome completo']"
+              :error="!!erros.name"
+              :error-message="erros.name"
+            />
+            <q-input
+              v-model="formulario.cpf"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="CPF *"
+              mask="###.###.###-##"
+              unmasked-value
+              :disable="salvando"
+              :rules="[(val) => /^\d{11}$/.test(val || '') || 'Informe os 11 dígitos do CPF']"
+              :error="!!erros.cpf"
+              :error-message="erros.cpf"
+            />
+            <q-input
+              v-model="formulario.data_nascimento"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Data de nascimento *"
+              type="date"
+              stack-label
+              :disable="salvando"
+              :rules="[(val) => !!val || 'Informe a data de nascimento']"
+              :error="!!erros.data_nascimento"
+              :error-message="erros.data_nascimento"
+            />
+            <q-input
+              v-model="formulario.telefone"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Telefone"
+              mask="(##) #####-####"
+              unmasked-value
+              :disable="salvando"
+              :rules="[(val) => !val || /^\d{10,11}$/.test(val) || 'Informe um telefone com DDD']"
+              :error="!!erros.telefone"
+              :error-message="erros.telefone"
+            />
+            <q-input
+              v-model="formulario.email"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="E-mail *"
+              type="email"
+              maxlength="255"
+              :disable="salvando"
+              :rules="[(val) => !!val?.trim() || 'Informe o e-mail']"
+              :error="!!erros.email"
+              :error-message="erros.email"
+            />
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" :disable="salvando || salvandoFoto" v-close-popup />
+          <q-btn
+            type="submit"
+            color="primary"
+            icon-right="save"
+            label="Salvar"
+            :loading="salvando"
+            :disable="salvandoFoto"
           />
-        </div>
-
-        <!-- EMAIL -->
-        <div class="col-12 q-px-md q-py-sm">
-          <q-input dense outlined v-model="user.email" label="Email *" />
-        </div>
-      </div>
-      <!-- <loading-dialog v-else /> -->
+        </q-card-actions>
+      </q-form>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
+import FotoPerfil from 'src/components/usuarios/FotoPerfil.vue'
 
-// PROPS
 const props = defineProps({
   modelValue: Boolean,
   usuarioId: [String, Number],
+  tipoUsuario: {
+    type: String,
+    required: true,
+    validator: (valor) => ['motorista', 'passageiro'].includes(valor),
+  },
 })
-
-// EMITS
 const emit = defineEmits(['update:modelValue', 'updated'])
-
-// QUASAR
 const $q = useQuasar()
-
-// MODEL
 const model = computed({
   get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val),
+  set: (valor) => emit('update:modelValue', valor),
 })
 
-// STATE
-const user = reactive({
-  name: '',
-  skill: '',
-  telefone: '',
-  cpf: '',
-  data_nascimento: '',
-  email: '',
-})
+// motorista e passageiro têm conta própria: os dados pessoais ficam no cadastro do app
+// (PUT motoristas/{id} ou passageiros/{id}) e a foto vai pelo endpoint de foto do perfil
+const endpoint = computed(() => `${props.tipoUsuario}s/${props.usuarioId}`)
+const campos = ['name', 'cpf', 'data_nascimento', 'telefone', 'email']
+const formulario = reactive(Object.fromEntries(campos.map((campo) => [campo, ''])))
+const foto = ref(null)
+const carregando = ref(false)
+const falhaCarregamento = ref('')
+const salvando = ref(false)
+const salvandoFoto = ref(false)
+const erros = ref({})
+let consulta = 0
 
-const loadingDialog = ref(false)
+const mensagensErro = (erro) =>
+  Object.fromEntries(
+    Object.entries(erro.response?.data?.errors || {}).map(([campo, mensagens]) => [
+      campo,
+      mensagens[0],
+    ]),
+  )
 
-const image = reactive({
-  data: null,
-  submit: false,
-})
-
-// API GET USER
-async function getUsuario(id) {
-  console.log(props.usuarioId, 'props.usuarioId')
-  const { data } = await api.get(`/users/${id}`)
-  return data
-}
-
-// BEFORE SHOW
-async function beforeShowDialog() {
-  if (!props.usuarioId) return
-
+async function carregar() {
+  const atual = ++consulta
+  erros.value = {}
+  falhaCarregamento.value = ''
+  carregando.value = true
   try {
-    const data = await getUsuario(props.usuarioId)
-    Object.assign(user, data)
+    const { data } = await api.get(endpoint.value)
+    if (atual !== consulta) return
+    for (const campo of campos) formulario[campo] = String(data[campo] || '')
+    formulario.data_nascimento = formulario.data_nascimento.slice(0, 10)
+    foto.value = data.foto
+  } catch (erro) {
+    if (atual === consulta)
+      falhaCarregamento.value =
+        erro.response?.data?.message || 'Não foi possível carregar o cadastro.'
   } finally {
-    loadingDialog.value = false
+    if (atual === consulta) carregando.value = false
   }
 }
 
-// IMAGE
-function imageSelected(e) {
-  const file = e.target.files[0]
-  image.data = file
-  imageUpload(file)
+async function salvar() {
+  if (salvando.value) return
+  salvando.value = true
+  erros.value = {}
+  try {
+    const { data } = await api.put(
+      endpoint.value,
+      Object.fromEntries(campos.map((campo) => [campo, formulario[campo].trim() || null])),
+    )
+    $q.notify({ type: 'positive', message: data.message })
+    emit('updated', data.data)
+    model.value = false
+  } catch (erro) {
+    erros.value = mensagensErro(erro)
+    $q.notify({
+      type: 'negative',
+      message: erro.response?.data?.message || 'Não foi possível salvar as alterações.',
+    })
+  } finally {
+    salvando.value = false
+  }
 }
 
-async function imageUpload(file) {
-  if (!user?.id || !file) return
-
-  image.submit = true
-
+async function salvarFoto(arquivo) {
+  if (salvandoFoto.value) return
+  if (
+    arquivo &&
+    (!['image/jpeg', 'image/png', 'image/webp'].includes(arquivo.type) ||
+      arquivo.size > 5 * 1024 * 1024)
+  ) {
+    $q.notify({ type: 'negative', message: 'Selecione JPG, PNG ou WebP de até 5 MB.' })
+    return
+  }
   const form = new FormData()
-  form.append('image', file)
-
+  if (arquivo) form.append('image', arquivo)
+  else form.append('remover_foto', '1')
+  salvandoFoto.value = true
   try {
-    await api.put(`/usuario-alterar-foto-perfil/${props.usuarioId}`, form, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const { data } = await api.post(`${endpoint.value}/foto`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
-
-    const data = await getUsuario(props.usuarioId)
-    Object.assign(user, data)
-
-    emit('updated')
-    $q.notify({ type: 'positive', message: 'Imagem atualizada com sucesso!' })
-  } catch (err) {
-    image.data = null
-    $q.notify({ type: 'negative', message: err.message })
+    foto.value = data.data.foto
+    emit('updated', data.data)
+    $q.notify({ type: 'positive', message: data.message })
+  } catch (erro) {
+    $q.notify({
+      type: 'negative',
+      message:
+        mensagensErro(erro).image ||
+        erro.response?.data?.message ||
+        'Não foi possível atualizar a foto.',
+    })
   } finally {
-    image.submit = false
-  }
-}
-
-// REMOVE IMAGE
-async function removeProfileImage() {
-  if (!props.usuarioId) return
-
-  try {
-    await api.delete(`/usuario-remover-foto-perfil/${props.usuarioId}`)
-    const data = await getUsuario(props.usuarioId)
-    Object.assign(user, data)
-    emit('updated')
-    $q.notify({ type: 'positive', message: 'Imagem removida com sucesso!' })
-  } catch (err) {
-    $q.notify({ type: 'negative', message: err.message })
-  }
-}
-
-// UPDATE USER
-async function atualizarUsuario() {
-  if (!props.usuarioId) return
-
-  try {
-    await api.put(`/users/${props.usuarioId}`, {
-      name: user.name,
-      skill: user.skill,
-      email: user.email,
-      telefone: user.telefone,
-      cpf: user.cpf,
-      data_nascimento: user.data_nascimento,
-    })
-
-    emit('updated')
-    $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso' })
-  } catch (err) {
-    $q.notify({ type: 'negative', message: err.message })
+    salvandoFoto.value = false
   }
 }
 </script>
-
-<style scoped>
-/* CSS ORIGINAL MANTIDO */
-.caption {
-  opacity: 0;
-  transition: linear 0.2s;
-}
-.caption:hover {
-  opacity: 1;
-}
-.btn {
-  display: inline-block;
-  padding: 6px 12px;
-  margin-bottom: 0;
-  font-size: 25px;
-  font-weight: normal;
-  line-height: 1.42857143;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  cursor: pointer;
-  user-select: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-}
-.btn-success {
-  color: #fff;
-}
-.fileinput-button {
-  position: relative;
-  overflow: hidden;
-}
-.fileinput-button input {
-  position: absolute;
-  top: 0;
-  right: 0;
-  margin: 0;
-  opacity: 0;
-  font-size: 200px;
-  cursor: pointer;
-}
-</style>

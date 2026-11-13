@@ -1,12 +1,6 @@
 <template>
   <q-page class="q-pa-md">
     <VisualizarRegistro v-model="dialog.mostrar" tipo="tarifa" :registro="registroVisualizado" />
-    <ExcluirRegistro
-      :acao="openPress"
-      :data="usuarioSelecionado"
-      @deleted="onRequest"
-      v-model="dialog.excluir"
-    />
     <q-card>
       <q-table
         :rows="data"
@@ -85,7 +79,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { api } from 'boot/axios'
 import VisualizarRegistro from 'src/components/VisualizarRegistro.vue'
-import ExcluirRegistro from 'src/components/ExcluirRegistro.vue'
 
 const emReais = (valor) =>
   valor === null || valor === undefined || valor === ''
@@ -96,8 +89,6 @@ const emReais = (valor) =>
 const data = ref([])
 
 // const dominio = ref('users')
-const usuarioSelecionado = ref(null)
-const openPress = ref(null)
 const loading = ref(false)
 const search = ref('')
 const grid = ref(false)
@@ -106,7 +97,6 @@ const dialog = reactive({
   editar: false,
   criar: false,
   mostrar: false,
-  excluir: false,
 })
 
 const registroVisualizado = ref(null)

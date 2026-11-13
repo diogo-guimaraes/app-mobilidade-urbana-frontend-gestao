@@ -49,12 +49,6 @@ const routes = [
         component: () => import('src/pages/SemAcesso.vue'),
       },
       {
-        path: 'usuarios',
-        meta: { permissao: 'usuarios.consultar' },
-        component: () => import('src/pages/usuarios/PaginaUsuarios.vue'),
-      },
-
-      {
         path: 'gestores',
         meta: { permissao: 'gestores.gerenciar' },
         component: () => import('src/pages/usuarios/PaginaGestores.vue'),

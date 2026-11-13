@@ -17,57 +17,55 @@
       <q-separator />
       <q-form @submit="cadastrarUsuario">
         <q-card-section class="campos-cadastro">
-          <template v-if="possuiConta">
-            <q-card-section class="flex justify-center">
-              <q-avatar v-if="imagemProfile" size="12rem">
-                <q-img :ratio="1" :src="imagemProfile" alt="Foto de perfil">
-                  <div class="flex caption absolute-full text-h5 flex-center">
-                    <span class="btn fileinput-button">
-                      <q-icon name="photo_camera" color="white" />
-                      <br />Alterar<br />imagem
-                      <input
-                        type="file"
-                        accept=".jpg,.jpeg,.png,.webp"
-                        aria-label="Alterar imagem"
-                        :disabled="salvando"
-                        @change="imageSelected"
-                      />
-                    </span>
-                  </div>
-                </q-img>
-              </q-avatar>
-              <q-avatar v-else color="primary" size="12rem">
-                <div class="flex absolute-full text-h5 flex-center">
+          <q-card-section class="flex justify-center">
+            <q-avatar v-if="imagemProfile" size="12rem">
+              <q-img :ratio="1" :src="imagemProfile" alt="Foto de perfil">
+                <div class="flex caption absolute-full text-h5 flex-center">
                   <span class="btn fileinput-button">
-                    <q-icon name="add_photo_alternate" size="40px" color="white" />
-                    <br />Adicionar<br />imagem
+                    <q-icon name="photo_camera" color="white" />
+                    <br />Alterar<br />imagem
                     <input
                       type="file"
                       accept=".jpg,.jpeg,.png,.webp"
-                      aria-label="Adicionar imagem"
+                      aria-label="Alterar imagem"
                       :disabled="salvando"
                       @change="imageSelected"
                     />
                   </span>
                 </div>
-              </q-avatar>
-            </q-card-section>
-            <div class="flex justify-center q-mb-md">
-              <q-btn
-                v-if="imagemProfile"
-                flat
-                dense
-                label="Remover imagem"
-                color="primary"
-                icon="close"
-                :disable="salvando"
-                @click="image = null"
-              />
-            </div>
-            <div v-if="erros.image" class="text-negative text-caption text-center q-mb-md">
-              {{ erros.image }}
-            </div>
-          </template>
+              </q-img>
+            </q-avatar>
+            <q-avatar v-else color="primary" size="12rem">
+              <div class="flex absolute-full text-h5 flex-center">
+                <span class="btn fileinput-button">
+                  <q-icon name="add_photo_alternate" size="40px" color="white" />
+                  <br />Adicionar<br />imagem
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    aria-label="Adicionar imagem"
+                    :disabled="salvando"
+                    @change="imageSelected"
+                  />
+                </span>
+              </div>
+            </q-avatar>
+          </q-card-section>
+          <div class="flex justify-center q-mb-md">
+            <q-btn
+              v-if="imagemProfile"
+              flat
+              dense
+              label="Remover imagem"
+              color="primary"
+              icon="close"
+              :disable="salvando"
+              @click="image = null"
+            />
+          </div>
+          <div v-if="erros.image" class="text-negative text-caption text-center q-mb-md">
+            {{ erros.image }}
+          </div>
           <div class="row q-col-gutter-md">
             <q-input
               v-model="usuario.name"
@@ -108,59 +106,57 @@
               :error="!!erros.data_nascimento"
               :error-message="erros.data_nascimento"
             />
-            <template v-if="possuiConta">
-              <q-input
-                v-model="usuario.telefone"
-                class="col-12 col-sm-6"
-                dense
-                outlined
-                label="Telefone"
-                mask="(##) #####-####"
-                unmasked-value
-                :disable="salvando"
-                :rules="[(val) => !val || /^\d{10,11}$/.test(val) || 'Informe um telefone com DDD']"
-                :error="!!erros.telefone"
-                :error-message="erros.telefone"
-              />
-              <q-input
-                v-model="usuario.email"
-                class="col-12 col-sm-6"
-                dense
-                outlined
-                label="E-mail *"
-                type="email"
-                :disable="salvando"
-                maxlength="255"
-                :rules="[(val) => !!val?.trim() || 'Informe o e-mail']"
-                :error="!!erros.email"
-                :error-message="erros.email"
-              />
-              <q-input
-                v-model="usuario.password"
-                class="col-12 col-sm-6"
-                dense
-                outlined
-                label="Senha *"
-                type="password"
-                autocomplete="new-password"
-                maxlength="255"
-                :disable="salvando"
-                :rules="[(val) => val?.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']"
-                :error="!!erros.password"
-                :error-message="erros.password"
-              />
-              <q-input
-                v-model="usuario.password_confirmation"
-                class="col-12 col-sm-6"
-                dense
-                outlined
-                label="Confirmar senha *"
-                type="password"
-                autocomplete="new-password"
-                :disable="salvando"
-                :rules="[(val) => (!!val && val === usuario.password) || 'As senhas não conferem']"
-              />
-            </template>
+            <q-input
+              v-model="usuario.telefone"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Telefone"
+              mask="(##) #####-####"
+              unmasked-value
+              :disable="salvando"
+              :rules="[(val) => !val || /^\d{10,11}$/.test(val) || 'Informe um telefone com DDD']"
+              :error="!!erros.telefone"
+              :error-message="erros.telefone"
+            />
+            <q-input
+              v-model="usuario.email"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="E-mail *"
+              type="email"
+              :disable="salvando"
+              maxlength="255"
+              :rules="[(val) => !!val?.trim() || 'Informe o e-mail']"
+              :error="!!erros.email"
+              :error-message="erros.email"
+            />
+            <q-input
+              v-model="usuario.password"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Senha *"
+              type="password"
+              autocomplete="new-password"
+              maxlength="255"
+              :disable="salvando"
+              :rules="[(val) => val?.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']"
+              :error="!!erros.password"
+              :error-message="erros.password"
+            />
+            <q-input
+              v-model="usuario.password_confirmation"
+              class="col-12 col-sm-6"
+              dense
+              outlined
+              label="Confirmar senha *"
+              type="password"
+              autocomplete="new-password"
+              :disable="salvando"
+              :rules="[(val) => (!!val && val === usuario.password) || 'As senhas não conferem']"
+            />
           </div>
         </q-card-section>
         <q-separator />
@@ -196,20 +192,19 @@ const props = defineProps({
   modelValue: Boolean,
   tipoUsuario: {
     type: String,
-    default: 'usuario',
-    validator: (val) => ['usuario', 'gestor', 'motorista', 'passageiro'].includes(val),
+    required: true,
+    validator: (val) => ['gestor', 'motorista', 'passageiro'].includes(val),
   },
 })
 const emit = defineEmits(['update:modelValue', 'created'])
 const $q = useQuasar()
+// motorista e passageiro têm conta própria em cada app: cadastro com os dados pessoais e de acesso
 const tipos = {
-  usuario: { titulo: 'Criar usuário', rota: 'users', conta: false },
-  gestor: { titulo: 'Criar gestor', rota: 'gestores', conta: true },
-  motorista: { titulo: 'Criar motorista', rota: 'motoristas', conta: true },
-  passageiro: { titulo: 'Criar passageiro', rota: 'passageiros', conta: true },
+  gestor: { titulo: 'Criar gestor', rota: 'gestores' },
+  motorista: { titulo: 'Criar motorista', rota: 'motoristas' },
+  passageiro: { titulo: 'Criar passageiro', rota: 'passageiros' },
 }
 const configuracao = computed(() => tipos[props.tipoUsuario])
-const possuiConta = computed(() => !!configuracao.value?.conta)
 const model = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
@@ -298,19 +293,16 @@ async function cadastrarUsuario() {
   salvando.value = true
   erros.value = {}
   const payload = new FormData()
-  for (const campo of ['name', 'cpf', 'data_nascimento'])
-    payload.append(campo, usuario[campo].trim())
-  if (possuiConta.value) {
-    for (const campo of ['email', 'telefone']) payload.append(campo, usuario[campo]?.trim() || '')
-    for (const campo of ['password', 'password_confirmation']) payload.append(campo, usuario[campo])
-    if (image.value) payload.append('image', image.value)
-  }
+  for (const campo of ['name', 'cpf', 'data_nascimento', 'email', 'telefone'])
+    payload.append(campo, usuario[campo]?.trim() || '')
+  for (const campo of ['password', 'password_confirmation']) payload.append(campo, usuario[campo])
+  if (image.value) payload.append('image', image.value)
   try {
     const { data } = await api.post(configuracao.value.rota, payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     $q.notify({ type: 'positive', message: data.message || 'Cadastro realizado com sucesso.' })
-    emit('created', data.gestor || data.data || data.user)
+    emit('created', data.gestor || data.data)
     model.value = false
   } catch (erro) {
     erros.value = Object.fromEntries(
