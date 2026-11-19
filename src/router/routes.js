@@ -61,6 +61,12 @@ const routes = [
       },
 
       {
+        path: 'motoristas-online',
+        meta: { permissao: 'usuarios.consultar' },
+        component: () => import('src/pages/usuarios/PaginaMotoristasOnline.vue'),
+      },
+
+      {
         path: 'aprovacao-documentos',
         meta: { permissao: 'documentos.consultar' },
         component: () => import('src/pages/documentos/PaginaAprovacaoDocumentos.vue'),

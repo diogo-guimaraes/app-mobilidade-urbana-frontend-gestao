@@ -268,6 +268,12 @@ export default {
           },
           { icon: 'group', text: 'Motoristas', to: '/motoristas', permissao: 'usuarios.consultar' },
           {
+            icon: 'sensors',
+            text: 'Motoristas online',
+            to: '/motoristas-online',
+            permissao: 'usuarios.consultar',
+          },
+          {
             icon: 'verified',
             text: 'Aprovação de documentos',
             to: '/aprovacao-documentos',
