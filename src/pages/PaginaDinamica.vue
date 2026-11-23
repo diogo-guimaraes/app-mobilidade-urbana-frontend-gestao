@@ -40,6 +40,32 @@
           as tarifas reais, e a lista abaixo mostra os valores que tocam para o motorista em foco.
         </div>
 
+        <div class="q-mt-md">
+          <div class="text-subtitle2">Demanda no mapa do motorista</div>
+          <div class="text-caption text-grey-7 q-mb-xs">
+            Escolha o nível e o mapa do motorista passa a mostrar manchas dele. Se a simulação não
+            estiver rodando, ela é iniciada; se estiver, é reiniciada com o nível escolhido. O
+            dinâmico surge sozinho quando a demanda passa do limite crítico (acima da metade do
+            teto).
+          </div>
+          <q-btn-group spread>
+            <q-btn
+              v-for="n in niveisDeDemanda"
+              :key="n.chave"
+              :color="simulacao.nivelDemanda === n.chave ? 'deep-orange' : undefined"
+              :outline="simulacao.nivelDemanda !== n.chave"
+              :icon="n.icone"
+              :label="n.rotulo"
+              :loading="simulacao.iniciando && simulacao.nivelDemanda === n.chave"
+              :disable="simulacao.iniciando"
+              no-caps
+              @click="escolherNivelDeDemanda(n)"
+            >
+              <q-tooltip>{{ n.descricao }}</q-tooltip>
+            </q-btn>
+          </q-btn-group>
+        </div>
+
         <div class="row q-col-gutter-md q-mt-sm">
           <div class="col-12">
             <q-select
@@ -1120,6 +1146,7 @@ const simulacao = reactive({
   focoPercentual: 35,
   vidaPedido: 2,
   cenario: null,
+  nivelDemanda: null,
   foco: null,
   opcoesDeFoco: [],
   rodando: false,
@@ -1141,6 +1168,62 @@ function aplicarCenario(chave) {
   simulacao.quantidade = cenario.quantidade
   simulacao.focoPercentual = cenario.foco_percentual
   simulacao.vidaPedido = cenario.vida_pedido_min
+}
+
+// níveis de demanda do mapa: o ritmo de cada um já vem junto (pedidos por rodada e frota online)
+const niveisDeDemanda = [
+  {
+    chave: 'limpo',
+    rotulo: 'Mapa limpo',
+    icone: 'blur_off',
+    descricao: 'Demanda muito baixa ou normal: sem mancha no mapa.',
+    quantidade: 20,
+    motoristas: 400,
+  },
+  {
+    chave: 'concentracao',
+    rotulo: 'Início de concentração',
+    icone: 'blur_on',
+    descricao: 'Manchas amarelas: movimento moderado, chance razoável de tocar corrida.',
+    quantidade: 150,
+    motoristas: 150,
+  },
+  {
+    chave: 'pesada',
+    rotulo: 'Demanda pesada',
+    icone: 'whatshot',
+    descricao: 'Manchas grandes em amarelo e âmbar, com bonequinhos: muitas solicitações juntas.',
+    quantidade: 300,
+    motoristas: 150,
+  },
+]
+
+async function escolherNivelDeDemanda(nivel) {
+  simulacao.nivelDemanda = nivel.chave
+  simulacao.quantidade = nivel.quantidade
+  simulacao.motoristasOnline = nivel.motoristas
+  simulacao.vidaPedido = 3
+
+  if (!simulacao.rodando) {
+    await iniciarSimulacao()
+    return
+  }
+
+  // já rodando: prepara de novo com o nível novo, e o laço de rodadas segue
+  simulacao.iniciando = true
+  simulacao.erro = ''
+  try {
+    await api.post('/dinamica/simulacao/iniciar', {
+      motoristas_online: simulacao.motoristasOnline,
+      motorista_foco_id: simulacao.foco?.id ?? null,
+      cenario: simulacao.cenario ?? null,
+      nivel_demanda: nivel.chave,
+    })
+  } catch (e) {
+    simulacao.erro = mensagemDoErro(e)
+  } finally {
+    simulacao.iniciando = false
+  }
 }
 
 api
@@ -1193,6 +1276,7 @@ async function iniciarSimulacao() {
       motoristas_online: simulacao.motoristasOnline,
       motorista_foco_id: simulacao.foco?.id ?? null,
       cenario: simulacao.cenario ?? null,
+      nivel_demanda: simulacao.nivelDemanda ?? null,
     })
     simulacao.rodando = true
     simulacao.rodadas = 0
