@@ -63,6 +63,26 @@
             >
               <q-tooltip>{{ n.descricao }}</q-tooltip>
             </q-btn>
+            <q-btn
+              :color="dinamicoPesadoLigado ? 'deep-orange' : undefined"
+              :outline="!dinamicoPesadoLigado"
+              icon="my_location"
+              label="Dinâmico pesado na região"
+              :loading="gerandoPesado"
+              :disable="gerandoPesado || (!dinamicoPesadoLigado && !simulacao.foco)"
+              no-caps
+              @click="alternarDinamicoPesado"
+            >
+              <q-tooltip>
+                {{
+                  dinamicoPesadoLigado
+                    ? 'Ligado em volta do motorista em foco. Clique para desligar.'
+                    : simulacao.foco
+                      ? 'Esquenta os hexágonos em volta do motorista em foco, por 1 hora.'
+                      : 'Escolha antes um motorista online em "Motorista em foco".'
+                }}
+              </q-tooltip>
+            </q-btn>
           </q-btn-group>
         </div>
 
@@ -163,6 +183,21 @@
           </div>
         </div>
 
+        <div class="q-mt-md">
+          <q-toggle
+            v-model="simuladosConcorrem"
+            :disable="salvandoConcorrencia"
+            color="deep-orange"
+            label="Motoristas simulados disputam os pedidos de passageiros reais"
+            @update:model-value="salvarConcorrencia"
+          />
+          <div class="text-caption text-grey-7">
+            Desligado (padrão): os pedidos feitos pelo app do passageiro só chegam a motoristas de
+            verdade e ficam abertos até um deles aceitar. Ligado: os simulados também aceitam e o
+            pedido some em poucos segundos.
+          </div>
+        </div>
+
         <div class="row q-gutter-sm q-mt-sm">
           <q-btn
             color="deep-orange"
@@ -229,17 +264,67 @@
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
               <div class="text-subtitle2 q-mb-xs">Pedidos abertos por bairro</div>
-              <q-markup-table flat dense bordered>
-                <tbody>
-                  <tr v-for="b in simulacao.situacao.por_bairro" :key="b.bairro">
-                    <td>{{ b.bairro }}</td>
-                    <td class="text-right text-weight-bold">{{ b.pedidos }}</td>
-                  </tr>
-                  <tr v-if="!simulacao.situacao.por_bairro.length">
-                    <td colspan="2" class="text-grey-6">Nenhum pedido aberto</td>
-                  </tr>
-                </tbody>
-              </q-markup-table>
+              <q-list bordered separator dense class="rounded-borders">
+                <q-expansion-item
+                  v-for="b in simulacao.situacao.por_bairro"
+                  :key="b.bairro"
+                  dense
+                  dense-toggle
+                  expand-icon-toggle
+                  group="pedidos-por-bairro"
+                >
+                  <template #header>
+                    <q-item-section>
+                      {{ b.bairro }}
+                      <q-item-label v-if="b.reais" caption class="text-deep-orange">
+                        {{ b.reais }} de passageiro real
+                      </q-item-label>
+                    </q-item-section>
+                    <q-item-section side class="text-weight-bold text-black">
+                      {{ b.pedidos }}
+                    </q-item-section>
+                  </template>
+                  <q-list dense separator class="bg-grey-1">
+                    <q-item v-for="p in b.lista" :key="p.corrida_id" class="q-py-sm">
+                      <q-item-section>
+                        <q-item-label caption class="text-grey-8">
+                          {{ dataEHoraDoPedido(p.solicitada_em) }} · {{ p.codigo }}
+                          <q-badge v-if="p.real" color="deep-orange" class="q-ml-xs">
+                            passageiro real
+                          </q-badge>
+                        </q-item-label>
+                        <q-item-label
+                          v-for="(ponto, i) in p.itinerario"
+                          :key="i"
+                          class="row no-wrap items-start q-mt-xs"
+                        >
+                          <q-icon
+                            :name="
+                              ponto.tipo === 'origem'
+                                ? 'trip_origin'
+                                : ponto.tipo === 'destino'
+                                  ? 'place'
+                                  : 'more_vert'
+                            "
+                            :color="ponto.tipo === 'destino' ? 'deep-orange' : 'teal'"
+                            size="16px"
+                            class="q-mr-xs q-mt-xs"
+                          />
+                          <span>{{ ponto.endereco || 'Endereço não informado' }}</span>
+                        </q-item-label>
+                      </q-item-section>
+                    </q-item>
+                    <q-item v-if="b.pedidos > b.lista.length">
+                      <q-item-section class="text-caption text-grey-7">
+                        Mostrando os {{ b.lista.length }} mais recentes de {{ b.pedidos }}.
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-expansion-item>
+                <q-item v-if="!simulacao.situacao.por_bairro.length">
+                  <q-item-section class="text-grey-6">Nenhum pedido aberto</q-item-section>
+                </q-item>
+              </q-list>
             </div>
 
             <div class="col-12 col-md-3">
@@ -1139,6 +1224,18 @@ function removerRegiao(regiao) {
 const emReais = (valor) =>
   Number(valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+const dataEHoraDoPedido = (iso) =>
+  iso
+    ? new Date(iso).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : 'Sem data'
+
 const simulacao = reactive({
   quantidade: 60,
   intervalo: 8,
@@ -1290,8 +1387,74 @@ async function iniciarSimulacao() {
   }
 }
 
+// dinâmico pesado em volta do motorista em foco (precisa estar online: a
+// posição é a dele, que o servidor já conhece)
+const gerandoPesado = ref(false)
+const dinamicoPesadoLigado = ref(false)
+
+async function gerarDinamicoPesado() {
+  if (!simulacao.foco) return
+  const cidade = selecionada.value ?? cidades.value.find((c) => c.ativo) ?? cidades.value[0]
+  if (!cidade) {
+    $q.notify({ type: 'warning', message: 'Configure o preço dinâmico de uma cidade primeiro.' })
+    return
+  }
+
+  gerandoPesado.value = true
+  try {
+    const { data } = await api.post(`/dinamica/cidades/${cidade.cidade_id}/regioes/pesado`, {
+      motorista_id: simulacao.foco.id,
+      minutos: 60,
+    })
+    $q.notify({
+      type: 'positive',
+      message: `${data.regioes} hexágonos esquentados por 1 hora em volta do motorista.`,
+    })
+    dinamicoPesadoLigado.value = true
+    await carregar()
+  } catch (e) {
+    $q.notify({
+      type: 'negative',
+      message: e.response?.data?.message || 'Não foi possível gerar o dinâmico.',
+    })
+  } finally {
+    gerandoPesado.value = false
+  }
+}
+
+const alternarDinamicoPesado = () =>
+  dinamicoPesadoLigado.value ? desativarDinamicoPesado() : gerarDinamicoPesado()
+
+async function desativarDinamicoPesado() {
+  const cidade = selecionada.value ?? cidades.value.find((c) => c.ativo) ?? cidades.value[0]
+  if (!cidade) return
+
+  gerandoPesado.value = true
+  try {
+    const { data } = await api.delete(`/dinamica/cidades/${cidade.cidade_id}/regioes/pesado`)
+    $q.notify({
+      type: data.removidas > 0 ? 'positive' : 'info',
+      message:
+        data.removidas > 0
+          ? `${data.removidas} hexágonos do dinâmico pesado removidos.`
+          : 'Não há dinâmico pesado ligado.',
+    })
+    dinamicoPesadoLigado.value = false
+    await carregar()
+  } catch (e) {
+    $q.notify({
+      type: 'negative',
+      message: e.response?.data?.message || 'Não foi possível desativar o dinâmico.',
+    })
+  } finally {
+    gerandoPesado.value = false
+  }
+}
+
 async function pararSimulacao() {
   simulacao.rodando = false
+  // o servidor remove o dinâmico pesado junto com a simulação
+  dinamicoPesadoLigado.value = false
   clearTimeout(temporizadorDaSimulacao)
   try {
     const { data } = await api.post('/dinamica/simulacao/parar')
@@ -1319,10 +1482,59 @@ async function verSobrasDaSimulacao() {
   }
 }
 
+// os simulados disputam os pedidos de passageiros reais? (padrão: não)
+const simuladosConcorrem = ref(false)
+const salvandoConcorrencia = ref(false)
+
+async function carregarConcorrencia() {
+  try {
+    const { data } = await api.get('/dinamica/simulacao/concorrencia')
+    simuladosConcorrem.value = data.simulados_concorrem_com_reais
+  } catch {
+    // sem o ajuste, o padrão (desligado) segue valendo no servidor
+  }
+}
+
+async function salvarConcorrencia(valor) {
+  salvandoConcorrencia.value = true
+  try {
+    await api.put('/dinamica/simulacao/concorrencia', { simulados_concorrem_com_reais: valor })
+  } catch (e) {
+    simuladosConcorrem.value = !valor
+    $q.notify({ type: 'negative', message: mensagemDoErro(e) })
+  } finally {
+    salvandoConcorrencia.value = false
+  }
+}
+
+// a lista de pedidos abertos acompanha o servidor a cada 3 s, com ou sem a
+// simulação rodando: um pedido real dura poucos segundos
+let temporizadorDaSituacao = null
+let atualizandoSituacao = false
+
+async function atualizarSituacao() {
+  if (atualizandoSituacao || simulacao.iniciando) return
+  atualizandoSituacao = true
+  try {
+    const { data } = await api.get('/dinamica/simulacao/situacao', {
+      params: { motorista_foco_id: simulacao.foco?.id ?? undefined },
+    })
+    simulacao.situacao = data
+  } catch {
+    // a próxima volta tenta de novo
+  } finally {
+    atualizandoSituacao = false
+  }
+}
+
 onMounted(() => {
   carregar()
   verSobrasDaSimulacao()
+  carregarConcorrencia()
+  temporizadorDaSituacao = setInterval(atualizarSituacao, 3000)
 })
+
+onBeforeUnmount(() => clearInterval(temporizadorDaSituacao))
 </script>
 
 <style scoped>
