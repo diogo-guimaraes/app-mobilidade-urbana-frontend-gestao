@@ -261,6 +261,14 @@
             </q-chip>
           </div>
 
+          <q-banner dense rounded class="bg-blue-1 text-grey-9 q-mb-md">
+            <b>Pedidos abertos por bairro</b> é só uma fotografia, atualizada a cada 3 s: lista as
+            corridas <i>solicitadas</i> ou <i>em busca</i> que ainda não têm motorista, agrupadas
+            pelo bairro mais próximo do embarque. Ela não escolhe quem recebe a chamada; isso é a
+            fila de prioridade em <router-link to="/despacho">Despacho de chamadas</router-link>. O
+            pedido some daqui quando um motorista aceita, o passageiro cancela ou ele expira.
+          </q-banner>
+
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
               <div class="text-subtitle2 q-mb-xs">Pedidos abertos por bairro</div>

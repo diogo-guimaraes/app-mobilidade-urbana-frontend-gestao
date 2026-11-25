@@ -14,6 +14,56 @@
       </q-card-section>
     </q-card>
 
+    <q-expansion-item
+      class="cartao q-mb-lg"
+      header-class="text-weight-bold"
+      icon="help_outline"
+      label="Como a chamada chega ao motorista"
+      default-opened
+    >
+      <q-card flat bordered>
+        <q-card-section class="text-body2">
+          <ol class="q-my-none q-pl-md">
+            <li>
+              <b>O pedido nasce:</b> o passageiro pede e a corrida fica como <i>solicitada</i>, sem
+              motorista. Ela já aparece em
+              <router-link to="/dinamica">Pedidos abertos por bairro</router-link>
+              (só acompanhamento, não escolhe motorista).
+            </li>
+            <li>
+              <b>Os candidatos:</b> motoristas online (vistos nos últimos 90 s), dentro do raio,
+              livres (sem corrida, sem outra chamada tocando e fora do descanso após recusa) e acima
+              dos mínimos de nota, aceitação e finalização definidos aqui.
+            </li>
+            <li>
+              <b>A pontuação:</b> cada candidato ganha pontos por proximidade, nota, aceitação,
+              finalização e região quente, com os pesos desta página. Entram os
+              {{ form.maximo_candidatos }} melhores.
+            </li>
+            <li>
+              <b>A chamada:</b> o cartão toca só para o primeiro do ranking, pelo tempo do cartão.
+              Se ele recusa ou o tempo acaba, passa para o próximo; esgotada a rodada, a fila
+              recomeça.
+            </li>
+            <li>
+              <b>Tela Solicitações:</b> os demais motoristas habilitados veem o pedido na lista, sem
+              tocar. Quem aceitar primeiro leva; para os outros o card mostra
+              <i>Pedido expirado</i> e some.
+            </li>
+            <li>
+              <b>Exceções:</b> Negocia (o passageiro escolhe entre propostas) e viagem compartilhada
+              não usam a fila. Com a fila desligada, todos do raio recebem ao mesmo tempo.
+            </li>
+          </ol>
+          <div class="text-caption text-grey-7 q-mt-sm">
+            A fila avança quando algum app de motorista consulta as corridas disponíveis. Na
+            simulação, motoristas simulados só disputam pedidos simulados, a menos que o interruptor
+            da página Dinâmica permita disputar os reais.
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-expansion-item>
+
     <div v-if="carregando" class="text-center q-pa-xl" role="status">
       <q-spinner color="primary" size="36px" />
       <div class="q-mt-sm">Carregando regras...</div>

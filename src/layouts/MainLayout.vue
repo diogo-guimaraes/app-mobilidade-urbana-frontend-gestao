@@ -305,6 +305,12 @@ export default {
           },
           { icon: 'no_crash', text: 'Corridas', to: '/corridas', permissao: 'corridas.consultar' },
           {
+            icon: 'directions_car',
+            text: 'Corridas em andamento',
+            to: '/corridas-em-andamento',
+            permissao: 'corridas.consultar',
+          },
+          {
             icon: 'help_center',
             text: 'Central de ajuda',
             to: '/central-ajuda',

@@ -79,6 +79,18 @@ const routes = [
       },
 
       {
+        path: 'corridas-em-andamento/lista',
+        meta: { permissao: 'corridas.consultar' },
+        component: () => import('src/pages/PaginaCorridasEmAndamentoLista.vue'),
+      },
+
+      {
+        path: 'corridas-em-andamento',
+        meta: { permissao: 'corridas.consultar' },
+        component: () => import('src/pages/PaginaCorridasEmAndamento.vue'),
+      },
+
+      {
         path: 'corridas',
         meta: { permissao: 'corridas.consultar' },
         component: () => import('src/pages/PaginaCorridas.vue'),
